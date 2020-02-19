@@ -6,8 +6,4 @@
     <RootNamespace>TicTacToe.Domain</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Entities\" />
-  </ItemGroup>
-
 </Project>
