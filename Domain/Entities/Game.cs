@@ -14,10 +14,10 @@ namespace TicTacToe.Domain.Entities
             Result = GameResult.InProgress;
 
             // initialize collections with default values in order to prevent null checks
-            CrossPlayerGameTiles = new List<GameTile>();
-            CrossPlayerGameWinConditions = new List<GameWinCondition>();
-            NoughtPlayerGameTiles = new List<GameTile>();
-            NoughtPlayerGameWinConditions = new List<GameWinCondition>();
+            CrossPlayerGameTiles = new List<CrossPlayerGameTile>();
+            CrossPlayerGameWinConditions = new List<CrossPlayerGameWinCondition>();
+            NoughtPlayerGameTiles = new List<NoughtPlayerGameTile>();
+            NoughtPlayerGameWinConditions = new List<NoughtPlayerGameWinCondition>();
         }
 
         /// <summary>
@@ -38,12 +38,12 @@ namespace TicTacToe.Domain.Entities
         /// <summary>
         /// Tiles that were placed on the board by the TicTacToeUser that is playing with cross character.
         /// </summary>
-        public IList<GameTile> CrossPlayerGameTiles { get; set; }
+        public IList<CrossPlayerGameTile> CrossPlayerGameTiles { get; set; }
 
         /// <summary>
         /// Current winning conditions of the TicTacToeUser that is playing with cross character.
         /// </summary>
-        public IList<GameWinCondition> CrossPlayerGameWinConditions { get; set; }
+        public IList<CrossPlayerGameWinCondition> CrossPlayerGameWinConditions { get; set; }
 
         /// <summary>
         /// ID of the TicTacToeUser that is playing with nought character.
@@ -53,12 +53,12 @@ namespace TicTacToe.Domain.Entities
         /// <summary>
         /// Tiles that were placed on the board by the TicTacToeUser that is playing with nought character.
         /// </summary>
-        public IList<GameTile> NoughtPlayerGameTiles { get; set; }
+        public IList<NoughtPlayerGameTile> NoughtPlayerGameTiles { get; set; }
 
         /// <summary>
         /// Current winning conditions of the TicTacToeUser that is playing with nought character.
         /// </summary>
-        public IList<GameWinCondition> NoughtPlayerGameWinConditions { get; set; }
+        public IList<NoughtPlayerGameWinCondition> NoughtPlayerGameWinConditions { get; set; }
 
         /// <summary>
         /// Result of the game for the player which played with cross character - win, loss, draw, still in progress

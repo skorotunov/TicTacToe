@@ -1,9 +1,9 @@
 ﻿namespace TicTacToe.Domain.Entities
 {
     /// <summary>
-    /// Entity that represents many-to-many relation between Game and WinCondition.
+    /// Entity that represents many-to-many relation between Game and Tile for cross player.
     /// </summary>
-    public class GameWinCondition
+    public class CrossPlayerGameTile
     {
         /// <summary>
         /// Primary key.
@@ -18,10 +18,10 @@
         public Game Game { get; set; }
 
         /// <summary>
-        /// Foreign key to the WinCondition entity.
+        /// Foreign key to the Tile entity.
         /// </summary>
-        public byte WinConditionId { get; set; }
+        public byte TileId { get; set; }
 
-        public WinCondition WinCondition { get; set; }
+        public Tile Tile { get; set; }
     }
 }

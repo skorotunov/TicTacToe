@@ -1,9 +1,9 @@
 ﻿namespace TicTacToe.Domain.Entities
 {
     /// <summary>
-    /// Entity that represents many-to-many relation between Game and Tile.
+    /// Entity that represents many-to-many relation between Game and Tile for nought player.
     /// </summary>
-    public class GameTile
+    public class NoughtPlayerGameTile
     {
         /// <summary>
         /// Primary key.

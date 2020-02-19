@@ -10,7 +10,8 @@ namespace TicTacToe.Domain.Entities
         public Tile()
         {
             // initialize collections with default values in order to prevent null checks
-            GameTiles = new List<GameTile>();
+            CrossPlayerGameTiles = new List<CrossPlayerGameTile>();
+            NoughtPlayerGameTiles = new List<NoughtPlayerGameTile>();
             WinConditionTiles = new List<WinConditionTile>();
         }
 
@@ -29,7 +30,9 @@ namespace TicTacToe.Domain.Entities
         /// </summary>
         public byte Y { get; set; }
 
-        public IList<GameTile> GameTiles { get; private set; }
+        public IList<CrossPlayerGameTile> CrossPlayerGameTiles { get; private set; }
+
+        public IList<NoughtPlayerGameTile> NoughtPlayerGameTiles { get; private set; }
 
         public IList<WinConditionTile> WinConditionTiles { get; private set; }
     }
