@@ -1,7 +1,7 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System;
 
-namespace TicTacToe.Infrastructure.Migrations
+namespace TicTacToe.Infrastructure.Persistence.Migrations
 {
     public partial class InitialMigration : Migration
     {
