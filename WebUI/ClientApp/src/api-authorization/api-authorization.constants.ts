@@ -1,4 +1,4 @@
-export const ApplicationName = 'WebApplication4';
+export const ApplicationName = 'TicTacToe.WebUI';
 
 export const ReturnUrlType = 'returnUrl';
 

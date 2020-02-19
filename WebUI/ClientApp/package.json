@@ -1,11 +1,11 @@
 {
-  "name": "webapplication4",
+  "name": "tictactoe.webui",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:ssr": "ng run WebApplication4:server:dev",
+    "build:ssr": "ng run TicTacToe.WebUI:server:dev",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
