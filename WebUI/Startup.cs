@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using TicTacToe.Application.Common.Interfaces;
 using TicTacToe.Infrastructure;
+using TicTacToe.WebUI.Hubs;
 using TicTacToe.WebUI.Services;
 
 namespace WebUI
@@ -34,6 +35,8 @@ namespace WebUI
             services.AddHttpContextAccessor();
 
             services.AddRazorPages();
+
+            services.AddSignalR();
 
             // Customise default API behaviour
             services.Configure<ApiBehaviorOptions>(options =>
@@ -82,6 +85,7 @@ namespace WebUI
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
+                endpoints.MapHub<PlayersHub>("/playersHub");
             });
 
             app.UseSpa(spa =>
