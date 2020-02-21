@@ -14,17 +14,18 @@ namespace WebUI
     {
         public static async Task Main(string[] args)
         {
-            IHost host;
             NLog.Logger logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
             try
             {
                 logger.Debug("init main");
-                host = CreateHostBuilder(args).Build();
+                IHost host = CreateHostBuilder(args).Build();
                 using (IServiceScope scope = host.Services.CreateScope())
                 {
                     TicTacToeDbContext context = scope.ServiceProvider.GetRequiredService<TicTacToeDbContext>();
                     context.Database.Migrate();
                 }
+
+                await host.RunAsync();
             }
             catch (Exception exception)
             {
@@ -37,8 +38,6 @@ namespace WebUI
                 // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
                 NLog.LogManager.Shutdown();
             }
-
-            await host.RunAsync();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args)
@@ -51,6 +50,7 @@ namespace WebUI
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
+                    logging.AddDebug();
                     logging.SetMinimumLevel(LogLevel.Trace);
                 })
                 .UseNLog();
