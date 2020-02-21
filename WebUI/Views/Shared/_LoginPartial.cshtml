@@ -1,0 +1,20 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using TicTacToe.Infrastructure.Identity;
+@inject SignInManager<TicTacToeUser> SignInManager
+@inject UserManager<TicTacToeUser> UserManager
+
+@{
+    string returnUrl = null;
+    var query = ViewContext.HttpContext.Request.Query;
+    if (query.ContainsKey("returnUrl"))
+    {
+        returnUrl = query["returnUrl"];
+    }
+}
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/">
+        <button type="submit" class="nav-link btn btn-link">Logout @User.Identity.Name</button>
+    </form>
+}

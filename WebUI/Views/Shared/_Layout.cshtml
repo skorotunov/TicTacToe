@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Tic-Tac-Toe</title>
+    <base href="/" />
+    <link rel="stylesheet" href="~/Identity/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+        <header class="masthead mb-auto">
+            <div class="inner">
+                <a class="navbar-brand">Tic-Tac-Toe</a>
+                <nav class="nav nav-masthead justify-content-center">
+                    @{
+                        await Html.RenderPartialAsync("_LoginPartial");
+                    }
+                </nav>
+            </div>
+        </header>
+
+        <main role="main" class="inner cover">
+            @RenderBody()
+        </main>
+
+        <footer class="mastfoot mt-auto text-center">
+            <div class="inner">
+                <p>&copy; 2020 - Tic-Tac-Toe by Sergiy Korotunov</p>
+            </div>
+        </footer>
+    </div>
+    <script src="~/Identity/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/Identity/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Identity/js/site.js" asp-append-version="true"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
