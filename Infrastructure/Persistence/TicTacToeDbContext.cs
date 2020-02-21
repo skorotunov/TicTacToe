@@ -1,17 +1,15 @@
-﻿using IdentityServer4.EntityFramework.Options;
-using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using System.Reflection;
 using TicTacToe.Domain.Entities;
 using TicTacToe.Infrastructure.Identity;
 
 namespace TicTacToe.Infrastructure.Persistence
 {
-    public class TicTacToeDbContext : ApiAuthorizationDbContext<TicTacToeUser>
+    public class TicTacToeDbContext : IdentityDbContext<TicTacToeUser>
     {
-        public TicTacToeDbContext(DbContextOptions options, IOptions<OperationalStoreOptions> operationalStoreOptions)
-            : base(options, operationalStoreOptions)
+        public TicTacToeDbContext(DbContextOptions<TicTacToeDbContext> options)
+            : base(options)
         {
         }
 
