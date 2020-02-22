@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using TicTacToe.Application.Common.Interfaces;
 using TicTacToe.Domain.Entities;
 using TicTacToe.Infrastructure.Identity;
 
 namespace TicTacToe.Infrastructure.Persistence
 {
-    public class TicTacToeDbContext : IdentityDbContext<TicTacToeUser>
+    public class TicTacToeDbContext : IdentityDbContext<TicTacToeUser>, ITicTacToeDbContext
     {
         public TicTacToeDbContext(DbContextOptions<TicTacToeDbContext> options)
             : base(options)

@@ -11,7 +11,7 @@ namespace TicTacToe.Domain.Entities
     {
         public Game()
         {
-            Result = GameResult.InProgress;
+            Result = GameResult.Active;
 
             // initialize collections with default values in order to prevent null checks
             CrossPlayerGameTiles = new List<CrossPlayerGameTile>();

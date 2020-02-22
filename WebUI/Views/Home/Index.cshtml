@@ -112,7 +112,7 @@
     <tr>
         <td>${playerName}</td>
         <td class="text-right">
-            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#player_${playerId}">View history</button>
+            <button class="btn btn-info player-history-btn" type="button" data-toggle="collapse" data-target="#player_${playerId}" player-id="${playerId}">View history</button>
             <button class="btn btn-success" type="button">Play</button>
         </td>
     </tr>
@@ -169,6 +169,23 @@
             }
         });
 
+        connection.onclose(function () {
+            start();
+        });
+
+        start();
+
+        $(document).on("click", ".player-history-btn", function () {
+            var playerId = $(this).attr("player-id"); 
+            $.get("/api/players/" + playerId)
+                .done(function (data) {
+                    console.log(data);
+                })
+                .fail(function () {
+                    alert("Your request has failed. Please contact support.");
+                });
+        });
+
         function start() {
             connection.start().catch(function (err) {
                 setTimeout(function () {
@@ -193,11 +210,5 @@
                 return itemTemplate.map(render(item)).join('');
             }));
         }
-
-        connection.onclose(function () {
-            start();
-        });
-
-        start();
     </script>
 }

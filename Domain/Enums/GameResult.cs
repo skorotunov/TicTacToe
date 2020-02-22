@@ -8,7 +8,7 @@
         /// <summary>
         /// This indicates that the game is in progress.
         /// </summary>
-        InProgress,
+        Active,
 
         /// <summary>
         /// This indicates that cross player has won the game.

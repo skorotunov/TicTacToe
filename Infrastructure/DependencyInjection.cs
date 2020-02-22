@@ -17,6 +17,8 @@ namespace TicTacToe.Infrastructure
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(TicTacToeDbContext).Assembly.FullName)));
 
+            services.AddScoped<ITicTacToeDbContext>(provider => provider.GetService<TicTacToeDbContext>());
+
             services.AddDefaultIdentity<TicTacToeUser>()
                 .AddEntityFrameworkStores<TicTacToeDbContext>();
 
