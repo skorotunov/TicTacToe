@@ -147,3 +147,80 @@ a.navbar-brand {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+
+.board {
+    /*display: none;*/
+}
+
+.boardTable {
+    margin: 0 auto;
+    table-layout: fixed;
+    font-size: 50px;
+}
+
+.boardTable tr {
+    border-bottom: 3px solid black;
+}
+
+.boardTable tr:last-child {
+    border-bottom: none;
+}
+
+.boardTable td {
+    border-right: 3px solid black;
+    width: 200px;
+    height: 200px;
+    text-align: center;
+    font-size: 150px;
+}
+
+.boardTable td:last-child {
+    border-right: none;
+}
+
+.boardCell:not(.filled):hover {
+    cursor: pointer;
+    background-color: #7b7b7b47;
+}
+
+.boardCell.filled:hover {
+    cursor: default;
+}
+
+.playersTable, .gamesTable {
+    color: #fff;
+    margin-bottom: 0;
+}
+
+table.disabled {
+    pointer-events: none;
+    opacity: 0.2;
+}
+
+.gamesTable tbody tr {
+    background-color: #7b7b7b47;
+}
+
+.gamesTable tbody tr:hover {
+    background-color: #d6d6d647;
+}
+
+.hiddenRow {
+    padding: 0 !important;
+}
+
+.hiddenRow {
+    background-color: #7b7b7b47;
+}
+
+.hiddenRow p {
+    margin: 1rem;
+}
+
+.badge {
+    text-transform: uppercase;
+}
+
+.no-players-message {
+    display: none;
+}

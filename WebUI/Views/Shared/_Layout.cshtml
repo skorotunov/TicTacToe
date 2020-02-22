@@ -10,10 +10,9 @@
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <div class="d-flex w-100 h-100 p-3 mx-auto flex-column">
         <header class="masthead mb-auto">
             <div class="inner">
-                <a class="navbar-brand">Tic-Tac-Toe</a>
                 <nav class="nav nav-masthead justify-content-center">
                     @{
                         await Html.RenderPartialAsync("_LoginPartial");
@@ -34,6 +33,7 @@
     </div>
     <script src="~/Identity/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/Identity/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/Identity/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
 </body>

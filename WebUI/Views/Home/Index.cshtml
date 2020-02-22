@@ -1,8 +1,192 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+﻿<div class="row">
+    <div class="col-md-4 offset-md-1">
+        <div class="boardContainer text-center">
+            <h5>Your are playing as O against testUser.</h5>
+            <h5>It's your turn. Please make your move.</h5>
+            <h5>It's your opponent turn. Please wait.</h5>
+            <table class="boardTable disabled">
+                <tbody>
+                    <tr>
+                        <td class="boardCell filled" id="pos-0-0">X</td>
+                        <td class="boardCell" id="pos-0-1"></td>
+                        <td class="boardCell" id="pos-0-2"></td>
+                    </tr>
+                    <tr>
+                        <td class="boardCell" id="pos-1-0"></td>
+                        <td class="boardCell" id="pos-1-1"></td>
+                        <td class="boardCell filled" id="pos-1-2">O</td>
+                    </tr>
+                    <tr>
+                        <td class="boardCell" id="pos-2-0"></td>
+                        <td class="boardCell" id="pos-2-1"></td>
+                        <td class="boardCell" id="pos-2-2"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <h3 class="no-players-message" style="display: none;">There are no available players at the moment.</h3>
+        <table class="table playersTable">
+            <tbody>
+                @*<tr>
+            <td>Player 1</td>
+            <td class="text-right">
+                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history1">View history</button>
+                <button class="btn btn-success" type="button">Play</button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="hiddenRow">
+                <div class="accordian-body collapse" id="history1">
+                    <table class="table table-borderless gamesTable">
+                        <tr>
+                            <td>1</td>
+                            <td>01-01-2020</td>
+                            <td><span class="badge badge-success">Win</span></td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>02-01-2020</td>
+                            <td><span class="badge badge-info">Not finished</span></td>
+                            <td class="text-right"><button class="btn btn-outline-success" type="button">Continue</button></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>03-01-2020</td>
+                            <td><span class="badge badge-warning">Draw</span></td>
+                            <td>&nbsp;</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>*@
+                @*<tr>
+            <td>Player 2</td>
+            <td class="text-right">
+                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history2">View history</button>
+                <button class="btn btn-success" type="button">Play</button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="hiddenRow">
+                <div class="accordian-body collapse" id="history2">
+                    <p>There were no previous games between you and this player.</p>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>Player 3</td>
+            <td class="text-right">
+                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history3">View history</button>
+                <button class="btn btn-success" type="button">Play</button>
+            </td>
+        </tr>*@
+                @*<tr>
+            <td colspan="2" class="hiddenRow">
+                <div class="accordian-body collapse" id="history3">
+                    <table class="table table-borderless gamesTable">
+                        <tr>
+                            <td>1</td>
+                            <td>02-01-2020</td>
+                            <td><span class="badge badge-danger">Loss</span></td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>05-01-2020</td>
+                            <td><span class="badge badge-info">Not finished</span></td>
+                            <td class="text-right"><button class="btn btn-outline-success" type="button">Continue</button></td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>*@
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script type="text/template" data-template="playerRow">
+    <tr>
+        <td>${playerName}</td>
+        <td class="text-right">
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history_${playerName}" player-id="${playerId}">View history</button>
+            <button class="btn btn-success" type="button">Play</button>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" class="hiddenRow">
+            <div class="accordian-body collapse" id="history_${playerName}">
+                <p>There were no previous games between you and this player.</p>
+            </div>
+        </td>
+    </tr>
+</script>
+
+@section Scripts {
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/players")
+            .configureLogging(signalR.LogLevel.Error)
+            .build();
+
+        connection.on("PlayerConnectedSelf", function (players) {
+            console.log(players);
+            if (!players.length) {
+                $(".no-players-message").show();
+            }
+            else {
+                var itemTemplate = $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+                for (var i = 0; i < players.length; ++i) {
+                    var player = players[i];
+                    var items = [{
+                        playerName: player.name,
+                        playerId: player.id
+                    }];
+                    processTemplate(items, itemTemplate);
+                }
+            }
+        });
+
+        connection.on("PlayerConnected", function (playerId, playerName) {
+            var items = [{
+              playerName: playerName,
+              playerId: playerId
+            }];
+            var itemTemplate = $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+            processTemplate(items, itemTemplate);
+        });
+
+        connection.on("PlayerDisconnected", function (playerId, playerName) {
+            console.log(playerName + "disconnected");
+        });
+
+        function start() {
+            connection.start().catch(function (err) {
+                setTimeout(function () {
+                    start();
+                }, 5000);
+            });
+        }
+
+        // function to render template
+        function render(props) {
+            return function (tok, i) { return (i % 2) ? props[tok] : tok; };
+        }
+
+        //functio to fill template
+        function processTemplate(items, itemTemplate) {
+            $(".playersTable > tbody:last-child").append(items.map(function (item) {
+                return itemTemplate.map(render(item)).join('');
+            }));
+        }
+
+        connection.onclose(function () {
+            start();
+        });
+
+        start();
+    </script>
+}
