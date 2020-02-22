@@ -1,32 +1,32 @@
 ﻿<div class="row">
     <div class="col-md-4 offset-md-1">
         <div class="boardContainer text-center">
-            <h5>Your are playing as O against testUser.</h5>
-            <h5>It's your turn. Please make your move.</h5>
-            <h5>It's your opponent turn. Please wait.</h5>
+            <h5 class="display-none">Your are playing as O against testUser.</h5>
+            <h5 class="display-none">It's your turn. Please make your move.</h5>
+            <h5 class="display-none">It's your opponent turn. Please wait.</h5>
             <table class="boardTable disabled">
                 <tbody>
                     <tr>
-                        <td class="boardCell filled" id="pos-0-0">X</td>
-                        <td class="boardCell" id="pos-0-1"></td>
-                        <td class="boardCell" id="pos-0-2"></td>
+                        <td class="boardCell filled noselect" id="pos-0-0">X</td>
+                        <td class="boardCell noselect" id="pos-0-1"></td>
+                        <td class="boardCell noselect" id="pos-0-2"></td>
                     </tr>
                     <tr>
-                        <td class="boardCell" id="pos-1-0"></td>
-                        <td class="boardCell" id="pos-1-1"></td>
-                        <td class="boardCell filled" id="pos-1-2">O</td>
+                        <td class="boardCell noselect" id="pos-1-0"></td>
+                        <td class="boardCell noselect" id="pos-1-1"></td>
+                        <td class="boardCell noselect filled" id="pos-1-2">O</td>
                     </tr>
                     <tr>
-                        <td class="boardCell" id="pos-2-0"></td>
-                        <td class="boardCell" id="pos-2-1"></td>
-                        <td class="boardCell" id="pos-2-2"></td>
+                        <td class="boardCell noselect" id="pos-2-0"></td>
+                        <td class="boardCell noselect" id="pos-2-1"></td>
+                        <td class="boardCell noselect" id="pos-2-2"></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
     <div class="col-md-7">
-        <h3 class="no-players-message" style="display: none;">There are no available players at the moment.</h3>
+        <h3 class="no-players-message text-center display-none">There are no available players at the moment.</h3>
         <table class="table playersTable">
             <tbody>
                 @*<tr>
@@ -112,13 +112,13 @@
     <tr>
         <td>${playerName}</td>
         <td class="text-right">
-            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history_${playerName}" player-id="${playerId}">View history</button>
+            <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#player_${playerId}">View history</button>
             <button class="btn btn-success" type="button">Play</button>
         </td>
     </tr>
     <tr>
         <td colspan="2" class="hiddenRow">
-            <div class="accordian-body collapse" id="history_${playerName}">
+            <div class="accordian-body collapse" id="player_${playerId}">
                 <p>There were no previous games between you and this player.</p>
             </div>
         </td>
@@ -133,12 +133,11 @@
             .build();
 
         connection.on("PlayerConnectedSelf", function (players) {
-            console.log(players);
             if (!players.length) {
                 $(".no-players-message").show();
             }
             else {
-                var itemTemplate = $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+                var itemTemplate = getTemplate();
                 for (var i = 0; i < players.length; ++i) {
                     var player = players[i];
                     var items = [{
@@ -151,16 +150,23 @@
         });
 
         connection.on("PlayerConnected", function (playerId, playerName) {
+            $(".no-players-message").hide();
             var items = [{
               playerName: playerName,
               playerId: playerId
             }];
-            var itemTemplate = $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+            var itemTemplate = getTemplate();
             processTemplate(items, itemTemplate);
         });
 
-        connection.on("PlayerDisconnected", function (playerId, playerName) {
-            console.log(playerName + "disconnected");
+        connection.on("PlayerDisconnected", function (playerId) {
+            var gamesRowElement = $("#player_" + playerId).closest("tr");
+            var playerRowElement = gamesRowElement.prev();
+            gamesRowElement.remove();
+            playerRowElement.remove();
+            if (!$("#playersTable tr").length) {
+                $(".no-players-message").show();
+            }
         });
 
         function start() {
@@ -171,12 +177,17 @@
             });
         }
 
+        // function to get template 
+        function getTemplate() {
+            return $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+        }
+
         // function to render template
         function render(props) {
             return function (tok, i) { return (i % 2) ? props[tok] : tok; };
         }
 
-        //functio to fill template
+        //function to fill template
         function processTemplate(items, itemTemplate) {
             $(".playersTable > tbody:last-child").append(items.map(function (item) {
                 return itemTemplate.map(render(item)).join('');

@@ -32,7 +32,8 @@ namespace TicTacToe.WebUI.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            bool sendCallback = false;
+            bool sendPlayerConnectedCallback = false;
+            bool sendPlayerConnectedSelfCallback = false;
             IEnumerable<Player> values = null;
             string playerId = currentUserService.UserId;
             string playerName = httpContextAccessor.HttpContext.User.Identity.Name;
@@ -54,14 +55,21 @@ namespace TicTacToe.WebUI.Hubs
                 {
                     playerNotInTheGame.ConnectionIds.Add(connectionId);
 
-                    // only broadcast this info if this is the first connection of the user
-                    sendCallback = playerNotInTheGame.ConnectionIds.Count == 1;
+                    // always broadcast this to show players list for the new connection
+                    sendPlayerConnectedSelfCallback = true;
                     values = PlayersNotInTheGame.Where(x => x.Key != playerNotInTheGame.Id).Select(x => x.Value);
+
+                    // only broadcast this info if this is the first connection of the user
+                    sendPlayerConnectedCallback = playerNotInTheGame.ConnectionIds.Count == 1;
                 }
 
-                if (sendCallback)
+                if (sendPlayerConnectedSelfCallback)
                 {
                     await Clients.Caller.SendAsync("PlayerConnectedSelf", values);
+                }
+
+                if (sendPlayerConnectedCallback)
+                {
                     await Clients.Others.SendAsync("PlayerConnected", playerId, playerName);
                 }
             }
@@ -106,7 +114,7 @@ namespace TicTacToe.WebUI.Hubs
 
                 if (sendCallback)
                 {
-                    await Clients.Others.SendAsync("PlayerDisconnected", playerId, playerName);
+                    await Clients.Others.SendAsync("PlayerDisconnected", playerId);
                 }
             }
 

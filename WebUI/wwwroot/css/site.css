@@ -107,10 +107,13 @@ body {
     color: rgba(255, 255, 255, .5);
 }
 
-a.navbar-brand {
-    white-space: normal;
-    text-align: center;
-    word-break: break-all;
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently supported by Chrome, Opera and Firefox */
 }
 
 .form-signin {
@@ -192,6 +195,18 @@ a.navbar-brand {
     margin-bottom: 0;
 }
 
+.playersTable td, .gamesTable td {
+    vertical-align: middle;
+}
+
+.playersTable td {
+    font-size: 2rem;
+}
+
+.gamesTable td, .playersTable td p {
+    font-size: 1rem;
+}
+
 table.disabled {
     pointer-events: none;
     opacity: 0.2;
@@ -221,6 +236,6 @@ table.disabled {
     text-transform: uppercase;
 }
 
-.no-players-message {
+.display-none {
     display: none;
 }
