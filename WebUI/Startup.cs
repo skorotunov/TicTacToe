@@ -1,3 +1,4 @@
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using TicTacToe.Application;
 using TicTacToe.Application.Common.Interfaces;
 using TicTacToe.Infrastructure;
+using TicTacToe.WebUI.Common;
 using TicTacToe.WebUI.Hubs;
 using TicTacToe.WebUI.Services;
 
@@ -33,7 +35,8 @@ namespace WebUI
 
             services.AddSignalR();
 
-            services.AddControllersWithViews();
+            services.AddControllersWithViews()
+                .AddFluentValidation(x => x.RegisterValidatorsFromAssemblyContaining<ITicTacToeDbContext>());
 
             services.AddRazorPages();
         }
@@ -52,6 +55,8 @@ namespace WebUI
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            app.UseCustomExceptionHandler();
 
             app.UseHttpsRedirection();
 
