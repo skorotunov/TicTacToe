@@ -155,21 +155,21 @@ body {
     /*display: none;*/
 }
 
-.boardTable {
+.board-table {
     margin: 0 auto;
     table-layout: fixed;
     font-size: 50px;
 }
 
-.boardTable tr {
+.board-table tr {
     border-bottom: 3px solid black;
 }
 
-.boardTable tr:last-child {
+.board-table tr:last-child {
     border-bottom: none;
 }
 
-.boardTable td {
+.board-table td {
     border-right: 3px solid black;
     width: 200px;
     height: 200px;
@@ -177,33 +177,33 @@ body {
     font-size: 150px;
 }
 
-.boardTable td:last-child {
+.board-table td:last-child {
     border-right: none;
 }
 
-.boardCell:not(.filled):hover {
+.board-cell:not(.filled):hover {
     cursor: pointer;
-    background-color: #7b7b7b47;
+    background-color: rgba(123, 123, 123, 0.2784313725490196);
 }
 
-.boardCell.filled:hover {
+.board-cell.filled:hover {
     cursor: default;
 }
 
-.playersTable, .gamesTable {
+.players-table, .games-table {
     color: #fff;
     margin-bottom: 0;
 }
 
-.playersTable td, .gamesTable td {
+.players-table td, .games-table td {
     vertical-align: middle;
 }
 
-.playersTable td {
+.players-table td {
     font-size: 2rem;
 }
 
-.gamesTable td, .playersTable td p {
+.games-table td, .players-table td p {
     font-size: 1rem;
 }
 
@@ -212,23 +212,23 @@ table.disabled {
     opacity: 0.2;
 }
 
-.gamesTable tbody tr {
-    background-color: #7b7b7b47;
+.games-table tbody tr {
+    background-color: rgba(123, 123, 123, 0.2784313725490196);
 }
 
-.gamesTable tbody tr:hover {
-    background-color: #d6d6d647;
+.games-table tbody tr:hover {
+    background-color: rgba(214, 214, 214, 0.2784313725490196);
 }
 
-.hiddenRow {
+.hidden-row {
     padding: 0 !important;
 }
 
-.hiddenRow {
-    background-color: #7b7b7b47;
+.hidden-row {
+    background-color: rgba(123, 123, 123, 0.2784313725490196);
 }
 
-.hiddenRow p {
+.hidden-row p {
     margin: 1rem;
 }
 

@@ -13,13 +13,16 @@ namespace TicTacToe.Application.Players.Queries.GetPlayerGames
 
         public string Result { get; set; }
 
-        public bool IsPossibleToContinue { get; set; }
-
         public void Mapping(Profile profile)
         {
+            string currentUserId = null;
             profile.CreateMap<Game, GameDTO>()
-                .ForMember(x => x.StartDate, opt => opt.MapFrom(x => x.StartDate.ToString("g")))
-                .ForMember(x => x.IsPossibleToContinue, opt => opt.MapFrom(x => x.Result == GameResult.Active));
+                .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate.ToString("g")))
+                .ForMember(x => x.Result, opt => opt.MapFrom(src => src.Result == GameResult.Win && src.NoughtPlayerId == currentUserId
+                    ? GameResult.Loss.ToString()
+                    : (src.Result == GameResult.Loss && src.NoughtPlayerId == currentUserId ? GameResult.Win.ToString() : src.Result.ToString())));
+
         }
     }
+
 }

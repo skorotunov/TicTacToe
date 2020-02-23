@@ -4,22 +4,22 @@
             <h5 class="display-none">Your are playing as O against testUser.</h5>
             <h5 class="display-none">It's your turn. Please make your move.</h5>
             <h5 class="display-none">It's your opponent turn. Please wait.</h5>
-            <table class="boardTable disabled">
+            <table class="board-table disabled">
                 <tbody>
                     <tr>
-                        <td class="boardCell filled noselect" id="pos-0-0">X</td>
-                        <td class="boardCell noselect" id="pos-0-1"></td>
-                        <td class="boardCell noselect" id="pos-0-2"></td>
+                        <td class="board-cell filled noselect" id="pos-0-0">X</td>
+                        <td class="board-cell noselect" id="pos-0-1"></td>
+                        <td class="board-cell noselect" id="pos-0-2"></td>
                     </tr>
                     <tr>
-                        <td class="boardCell noselect" id="pos-1-0"></td>
-                        <td class="boardCell noselect" id="pos-1-1"></td>
-                        <td class="boardCell noselect filled" id="pos-1-2">O</td>
+                        <td class="board-cell noselect" id="pos-1-0"></td>
+                        <td class="board-cell noselect" id="pos-1-1"></td>
+                        <td class="board-cell noselect filled" id="pos-1-2">O</td>
                     </tr>
                     <tr>
-                        <td class="boardCell noselect" id="pos-2-0"></td>
-                        <td class="boardCell noselect" id="pos-2-1"></td>
-                        <td class="boardCell noselect" id="pos-2-2"></td>
+                        <td class="board-cell noselect" id="pos-2-0"></td>
+                        <td class="board-cell noselect" id="pos-2-1"></td>
+                        <td class="board-cell noselect" id="pos-2-2"></td>
                     </tr>
                 </tbody>
             </table>
@@ -27,101 +27,38 @@
     </div>
     <div class="col-md-7">
         <h3 class="no-players-message text-center display-none">There are no available players at the moment.</h3>
-        <table class="table playersTable">
-            <tbody>
-                @*<tr>
-            <td>Player 1</td>
-            <td class="text-right">
-                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history1">View history</button>
-                <button class="btn btn-success" type="button">Play</button>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" class="hiddenRow">
-                <div class="accordian-body collapse" id="history1">
-                    <table class="table table-borderless gamesTable">
-                        <tr>
-                            <td>1</td>
-                            <td>01-01-2020</td>
-                            <td><span class="badge badge-success">Win</span></td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>02-01-2020</td>
-                            <td><span class="badge badge-info">Not finished</span></td>
-                            <td class="text-right"><button class="btn btn-outline-success" type="button">Continue</button></td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>03-01-2020</td>
-                            <td><span class="badge badge-warning">Draw</span></td>
-                            <td>&nbsp;</td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>*@
-                @*<tr>
-            <td>Player 2</td>
-            <td class="text-right">
-                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history2">View history</button>
-                <button class="btn btn-success" type="button">Play</button>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" class="hiddenRow">
-                <div class="accordian-body collapse" id="history2">
-                    <p>There were no previous games between you and this player.</p>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>Player 3</td>
-            <td class="text-right">
-                <button class="btn btn-info" type="button" data-toggle="collapse" data-target="#history3">View history</button>
-                <button class="btn btn-success" type="button">Play</button>
-            </td>
-        </tr>*@
-                @*<tr>
-            <td colspan="2" class="hiddenRow">
-                <div class="accordian-body collapse" id="history3">
-                    <table class="table table-borderless gamesTable">
-                        <tr>
-                            <td>1</td>
-                            <td>02-01-2020</td>
-                            <td><span class="badge badge-danger">Loss</span></td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>05-01-2020</td>
-                            <td><span class="badge badge-info">Not finished</span></td>
-                            <td class="text-right"><button class="btn btn-outline-success" type="button">Continue</button></td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>*@
-            </tbody>
+        <table class="table players-table">
+            <tbody></tbody>
         </table>
     </div>
 </div>
 
-<script type="text/template" data-template="playerRow">
+<script type="text/template" data-template="player-row">
     <tr>
         <td>${playerName}</td>
         <td class="text-right">
-            <button class="btn btn-info player-history-btn" type="button" data-toggle="collapse" data-target="#player_${playerId}" player-id="${playerId}">View history</button>
+            <button class="btn btn-info player-history-btn" type="button">View history</button>
             <button class="btn btn-success" type="button">Play</button>
         </td>
     </tr>
     <tr>
-        <td colspan="2" class="hiddenRow">
-            <div class="accordian-body collapse" id="player_${playerId}">
-                <p>There were no previous games between you and this player.</p>
+        <td colspan="2" class="hidden-row">
+            <div class="accordian-body collapse" id="player_${playerId}" player-id="${playerId}">
+                <p class="no-games-message">There were no previous games between you and this player.</p>
+                <table class="table table-borderless games-table display-none">
+                    <tbody></tbody>
+                </table>
             </div>
         </td>
+    </tr>
+</script>
+
+<script type="text/template" data-template="game-row">
+    <tr>
+        <td>${id}</td>
+        <td>${startDate}</td>
+        <td><span class="badge ${badgeClass}">${result}</span></td>
+        <td class="text-right" game-id="${gameId}">${actionHtml}</td>
     </tr>
 </script>
 
@@ -137,14 +74,15 @@
                 $(".no-players-message").show();
             }
             else {
-                var itemTemplate = getTemplate();
+                var itemTemplate = getTemplate("player-row");
                 for (var i = 0; i < players.length; ++i) {
                     var player = players[i];
                     var items = [{
                         playerName: player.name,
                         playerId: player.id
                     }];
-                    processTemplate(items, itemTemplate);
+                    var appendElement = $(".players-table > tbody:last-child");
+                    processTemplate(items, itemTemplate, appendElement);
                 }
             }
         });
@@ -155,8 +93,9 @@
               playerName: playerName,
               playerId: playerId
             }];
-            var itemTemplate = getTemplate();
-            processTemplate(items, itemTemplate);
+            var itemTemplate = getTemplate("player-row");
+            var appendElement = $(".players-table > tbody:last-child");
+            processTemplate(items, itemTemplate, appendElement);
         });
 
         connection.on("PlayerDisconnected", function (playerId) {
@@ -164,7 +103,7 @@
             var playerRowElement = gamesRowElement.prev();
             gamesRowElement.remove();
             playerRowElement.remove();
-            if (!$("#playersTable tr").length) {
+            if (!$(".players-table tr").length) {
                 $(".no-players-message").show();
             }
         });
@@ -176,14 +115,63 @@
         start();
 
         $(document).on("click", ".player-history-btn", function () {
-            var playerId = $(this).attr("player-id"); 
-            $.get("/api/players/" + playerId)
+            var rowElement = $(this).closest("tr").next();
+            var gamesTableElement = rowElement.find(".games-table");
+            if (!gamesTableElement.hasClass("initialized")) {
+                gamesTableElement.addClass("initialized");
+                var playerId = rowElement.find("div").attr("player-id");
+                $.get("/api/players/" + playerId)
                 .done(function (data) {
-                    console.log(data);
+                    var games = data["games"];
+                    if (games.length) {
+                        rowElement.find(".no-games-message").hide();
+                        var itemTemplate = getTemplate("game-row");
+                        for (var i = 0; i < games.length; ++i) {
+                            var game = games[i];
+                            var badgeClass = "";
+                            var actionHtml = "&nbsp;";
+                            switch (game.result) {
+                                case "Active":
+                                    badgeClass = "badge-info";
+                                    actionHtml = "<button class='btn btn-outline-success continue-game-btn' type='button'>Continue</button>";
+                                    break;
+                                case "Loss":
+                                    badgeClass = "badge-danger";
+                                    actionHtml = "&nbsp;";
+                                    break;
+                                case "Win":
+                                    badgeClass = "badge-success";
+                                    actionHtml = "&nbsp;";
+                                    break;
+                                case "Draw":
+                                    badgeClass = "badge-warning";
+                                    actionHtml = "&nbsp;";
+                                    break;
+                            }
+
+                            var items = [{
+                                id: i + 1,
+                                startDate: game.startDate,
+                                badgeClass: badgeClass,
+                                result: game.result,
+                                gameId: game.id,
+                                actionHtml: actionHtml
+                            }];
+                            var appendElement = rowElement.find(".games-table > tbody:last-child");
+                            processTemplate(items, itemTemplate, appendElement);
+                            gamesTableElement.show();
+                        }
+                    }
+
+                    rowElement.find("div").collapse("toggle");
                 })
                 .fail(function () {
                     alert("Your request has failed. Please contact support.");
                 });
+            }
+            else {
+                rowElement.find("div").collapse("toggle");
+            }
         });
 
         function start() {
@@ -195,8 +183,8 @@
         }
 
         // function to get template 
-        function getTemplate() {
-            return $('script[data-template="playerRow"]').text().split(/\$\{(.+?)\}/g);
+        function getTemplate(name) {
+            return $('script[data-template="' + name + '"]').text().split(/\$\{(.+?)\}/g);
         }
 
         // function to render template
@@ -205,8 +193,8 @@
         }
 
         //function to fill template
-        function processTemplate(items, itemTemplate) {
-            $(".playersTable > tbody:last-child").append(items.map(function (item) {
+        function processTemplate(items, itemTemplate, appendElement) {
+            appendElement.append(items.map(function (item) {
                 return itemTemplate.map(render(item)).join('');
             }));
         }
