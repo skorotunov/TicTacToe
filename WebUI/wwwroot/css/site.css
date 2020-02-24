@@ -239,3 +239,7 @@ table.disabled {
 .display-none {
     display: none;
 }
+
+.modal-content {
+    background-color: #333;
+}

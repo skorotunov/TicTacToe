@@ -9,6 +9,7 @@ namespace TicTacToe.WebUI.Models
             Id = id;
             Name = name;
             ConnectionIds = new HashSet<string>();
+            Actions = new List<SynchronizationAction>();
         }
 
         public string Id { get; set; }
@@ -16,5 +17,7 @@ namespace TicTacToe.WebUI.Models
         public string Name { get; set; }
 
         public HashSet<string> ConnectionIds { get; set; }
+
+        public List<SynchronizationAction> Actions { get; set; }
     }
 }

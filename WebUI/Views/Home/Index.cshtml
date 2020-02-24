@@ -1,6 +1,9 @@
-﻿<div class="row">
+﻿<div class="row justify-content-md-center">
+    <div class="alert alert-danger display-none" id="failure-alert"></div>
+</div>
+<div class="row">
     <div class="col-md-4 offset-md-1">
-        <div class="boardContainer text-center">
+        <div class="boardContainer conta">
             <h5 class="display-none">Your are playing as O against testUser.</h5>
             <h5 class="display-none">It's your turn. Please make your move.</h5>
             <h5 class="display-none">It's your opponent turn. Please wait.</h5>
@@ -33,17 +36,19 @@
     </div>
 </div>
 
+<div id="modals"></div>
+
 <script type="text/template" data-template="player-row">
-    <tr>
+    <tr player-id="${playerId}">
         <td>${playerName}</td>
         <td class="text-right">
             <button class="btn btn-info player-history-btn" type="button">View history</button>
-            <button class="btn btn-success" type="button">Play</button>
+            <button class="btn btn-success player-play-btn" type="button">Play</button>
         </td>
     </tr>
     <tr>
         <td colspan="2" class="hidden-row">
-            <div class="accordian-body collapse" id="player_${playerId}" player-id="${playerId}">
+            <div class="accordian-body collapse" id="player_${playerId}">
                 <p class="no-games-message">There were no previous games between you and this player.</p>
                 <table class="table table-borderless games-table display-none">
                     <tbody></tbody>
@@ -62,141 +67,28 @@
     </tr>
 </script>
 
+<script type="text/template" data-template="gameRequestModal">
+    <div class="modal fade" id="gameRequestModal_${playerId}" tabindex="-1" role="dialog" aria-labelledby="gameRequestModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gameRequestModalLabel">Game request</h5>
+                </div>
+                <div class="modal-body">Player ${playerName} has just challenged you to play Tic-Tac-Toe game. Will you accept this challenge?</div>
+                <div class="modal-footer" player-id="${playerId}">
+                    <button type="button" class="btn btn-outline-light player-declineGame-btn">No</button>
+                    <button type="button" class="btn btn-outline-success player-acceptGame-btn">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
 @section Scripts {
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/players")
-            .configureLogging(signalR.LogLevel.Error)
-            .build();
-
-        connection.on("PlayerConnectedSelf", function (players) {
-            if (!players.length) {
-                $(".no-players-message").show();
-            }
-            else {
-                var itemTemplate = getTemplate("player-row");
-                for (var i = 0; i < players.length; ++i) {
-                    var player = players[i];
-                    var items = [{
-                        playerName: player.name,
-                        playerId: player.id
-                    }];
-                    var appendElement = $(".players-table > tbody:last-child");
-                    processTemplate(items, itemTemplate, appendElement);
-                }
-            }
-        });
-
-        connection.on("PlayerConnected", function (playerId, playerName) {
-            $(".no-players-message").hide();
-            var items = [{
-              playerName: playerName,
-              playerId: playerId
-            }];
-            var itemTemplate = getTemplate("player-row");
-            var appendElement = $(".players-table > tbody:last-child");
-            processTemplate(items, itemTemplate, appendElement);
-        });
-
-        connection.on("PlayerDisconnected", function (playerId) {
-            var gamesRowElement = $("#player_" + playerId).closest("tr");
-            var playerRowElement = gamesRowElement.prev();
-            gamesRowElement.remove();
-            playerRowElement.remove();
-            if (!$(".players-table tr").length) {
-                $(".no-players-message").show();
-            }
-        });
-
-        connection.onclose(function () {
+        $(function () {
+            // start hub
             start();
         });
-
-        start();
-
-        $(document).on("click", ".player-history-btn", function () {
-            var rowElement = $(this).closest("tr").next();
-            var gamesTableElement = rowElement.find(".games-table");
-            if (!gamesTableElement.hasClass("initialized")) {
-                gamesTableElement.addClass("initialized");
-                var playerId = rowElement.find("div").attr("player-id");
-                $.get("/api/players/" + playerId)
-                .done(function (data) {
-                    var games = data["games"];
-                    if (games.length) {
-                        rowElement.find(".no-games-message").hide();
-                        var itemTemplate = getTemplate("game-row");
-                        for (var i = 0; i < games.length; ++i) {
-                            var game = games[i];
-                            var badgeClass = "";
-                            var actionHtml = "&nbsp;";
-                            switch (game.result) {
-                                case "Active":
-                                    badgeClass = "badge-info";
-                                    actionHtml = "<button class='btn btn-outline-success continue-game-btn' type='button'>Continue</button>";
-                                    break;
-                                case "Loss":
-                                    badgeClass = "badge-danger";
-                                    actionHtml = "&nbsp;";
-                                    break;
-                                case "Win":
-                                    badgeClass = "badge-success";
-                                    actionHtml = "&nbsp;";
-                                    break;
-                                case "Draw":
-                                    badgeClass = "badge-warning";
-                                    actionHtml = "&nbsp;";
-                                    break;
-                            }
-
-                            var items = [{
-                                id: i + 1,
-                                startDate: game.startDate,
-                                badgeClass: badgeClass,
-                                result: game.result,
-                                gameId: game.id,
-                                actionHtml: actionHtml
-                            }];
-                            var appendElement = rowElement.find(".games-table > tbody:last-child");
-                            processTemplate(items, itemTemplate, appendElement);
-                            gamesTableElement.show();
-                        }
-                    }
-
-                    rowElement.find("div").collapse("toggle");
-                })
-                .fail(function () {
-                    alert("Your request has failed. Please contact support.");
-                });
-            }
-            else {
-                rowElement.find("div").collapse("toggle");
-            }
-        });
-
-        function start() {
-            connection.start().catch(function (err) {
-                setTimeout(function () {
-                    start();
-                }, 5000);
-            });
-        }
-
-        // function to get template 
-        function getTemplate(name) {
-            return $('script[data-template="' + name + '"]').text().split(/\$\{(.+?)\}/g);
-        }
-
-        // function to render template
-        function render(props) {
-            return function (tok, i) { return (i % 2) ? props[tok] : tok; };
-        }
-
-        //function to fill template
-        function processTemplate(items, itemTemplate, appendElement) {
-            appendElement.append(items.map(function (item) {
-                return itemTemplate.map(render(item)).join('');
-            }));
-        }
     </script>
 }
