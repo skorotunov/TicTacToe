@@ -12,22 +12,25 @@ connection.onclose(function () {
 
 // method that is called on any new connection to show active players list
 connection.on("PlayerConnectHandle", function (players) {
-    if (!players.length) {
-        // there are no active plaers
-        $(".no-players-message").show();
-    }
-    else {
-        // add row for each active player to the players table
-        var playerRowTemplate = getTemplate("player-row");
-        for (var i = 0; i < players.length; ++i) {
-            var player = players[i];
-            var items = [{
-                playerName: player.name,
-                playerId: player.id
-            }];
+    // add row for each active player to the players table
+    var playerRowTemplate = getTemplate("player-row");
+    for (var i = 0; i < players.length; ++i) {
+        var player = players[i];
+        var items = [{
+            playerName: player.name,
+            playerId: player.id,
+            groupName: player.groupName
+        }];
 
-            appendPlayerRow(items, playerRowTemplate);
+        appendPlayerRow(items, playerRowTemplate);
+        if (player.groupName) {
+            hidePlayer(player.id);
         }
+    }
+    
+    // there are no active plaers
+    if (!$(".players-table tr:not(.display-none)").length) {
+        $(".no-players-message").show();
     }
 });
 
@@ -46,10 +49,7 @@ connection.on("PlayerFirstTimeConnectHandle", function (playerId, playerName) {
 
 // method that is called on the last player's connection being disconected to inform other players
 connection.on("PlayerDisconnectHandle", function (playerId) {
-    var gamesRowElement = $("#player_" + playerId).closest("tr");
-    var playerRowElement = gamesRowElement.prev();
-    gamesRowElement.remove();
-    playerRowElement.remove();
+    removePlayer(playerId);
 
     // no active players left
     if (!$(".players-table tr").length) {
@@ -58,7 +58,7 @@ connection.on("PlayerDisconnectHandle", function (playerId) {
 });
 
 // method that is called when player opens game history for the first time in order to sinc other connections of the same user
-connection.on("PatientGamesFirstTimeOpenHandle", function (playerId) {
+connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
     var playerRowElement = $("tr[player-id='" + playerId + "']");
     var gamesRowElement = playerRowElement.next();
     var gamesTableElement = gamesRowElement.find(".games-table");
@@ -118,12 +118,12 @@ connection.on("PatientGamesFirstTimeOpenHandle", function (playerId) {
 });
 
 // method that is called after player opens already loaded game history in order to sinc other connections of the same user
-connection.on("PatientGamesOpenHandle", function (playerId) {
+connection.on("PlayerGamesOpenHandle", function (playerId) {
     $("tr[player-id='" + playerId + "']").next().find("div").collapse("show");
 });
 
 // method that is called after player closes already loaded game history in order to sinc other connections of the same user
-connection.on("PatientGamesCloseHandle", function (playerId) {
+connection.on("PlayerGamesCloseHandle", function (playerId) {
     $("tr[player-id='" + playerId + "']").next().find("div").collapse("hide");
 });
 
@@ -135,23 +135,16 @@ connection.on("NewGameStartCallerHandle", function (playerId) {
 });
 
 // method that is called if result of the starting new game is unsuccessful
-connection.on("NewGameFailureCallerHandle", function (playerId, message) {
-    // id playerId is not provided - set default value for all buttons
-    if (typeof playerId === "undefined") {
-        $(".player-play-btn").each(function (index) {
-            $(this).html("Play");
-        });
-    }
-    else {
-        $("tr[player-id='" + playerId + "']").find(".player-play-btn").html("Play");
-    }
-
-    $(".players-table").removeClass("disabled");
+connection.on("NewGameFailureHandle", function (playerId, message) {
     if (typeof message !== "undefined") {
         $("#failure-alert").html(message);
         $("#failure-alert").fadeTo(2000, 500).slideUp(500, function () {
             $("#failure-alert").slideUp(500);
+            enableNewGameButton(playerId);
         });
+    }
+    else {
+        enableNewGameButton(playerId);
     }
 });
 
@@ -175,14 +168,31 @@ connection.on("NewGameDeclineHandle", function (playerId) {
     $("#gameRequestModal_" + playerId).modal("hide");
 });
 
+connection.on("NewGameAcceptCallerHandle", function (playerId) {
+    $(".modal").each(function (index) {
+        $(this).modal("hide");
+    });
+    hidePlayer(playerId);
+    $(".players-table").addClass("disabled");
+    $(".board-table").removeClass("disabled");
+});
 
+connection.on("NewGameAcceptReceiverHandle", function (playerId) {
+    $("tr[player-id='" + playerId + "']").find(".player-play-btn").html("Play");
+    hidePlayer(playerId);
+    $(".players-table").addClass("disabled");
+    $(".board-table").removeClass("disabled");
+});
 
+// method that is called when player starts the game to inform other players
+connection.on("NewGameAcceptOthersHandle", function (playerId) {
+    hidePlayer(playerId);
 
-
-
-
-
-
+    // no active players left
+    if (!$(".players-table tr:not(.display-none)").length) {
+        $(".no-players-message").show();
+    }
+});
 
 // event handler on show player games history button
 $(document).on("click", ".player-history-btn", function () {
@@ -193,18 +203,18 @@ $(document).on("click", ".player-history-btn", function () {
     // check if games list was already loaded. If so - no need to load, because games list can be altered only after game complition event
     if (gamesTableElement.hasClass("initialized")) {
         if (gamesRowElement.find("div").hasClass("show")) {
-            connection.invoke("OnPatientGamesClose", playerId).catch(err => {
+            connection.invoke("OnPlayerGamesClose", playerId).catch(err => {
                 alert("Your request has failed. Please contact support.");
             });
         }
         else {
-            connection.invoke("OnPatientGamesOpen", playerId).catch(err => {
+            connection.invoke("OnPlayerGamesOpen", playerId).catch(err => {
                 alert("Your request has failed. Please contact support.");
             });
         }
     }
     else {
-        connection.invoke("OnPatientGamesFirstTimeOpen", playerId).catch(err => {
+        connection.invoke("OnPlayerGamesFirstTimeOpen", playerId).catch(err => {
             alert("Your request has failed. Please contact support.");
         });
     }
@@ -229,23 +239,13 @@ $(document).on("click", ".player-declineGame-btn", function () {
     });
 });
 
-
-
-
-
 // event handler on game accepted button
 $(document).on("click", ".player-acceptGame-btn", function () {
-    alert("game with" + $(this).closest("div").attr("player-id") + " accepted");
-    // TODO signalr
+    var playerId = $(this).closest("div").attr("player-id");
+    connection.invoke("OnNewGameAccept", playerId).catch(err => {
+        alert("Your request has failed. Please contact support.");
+    });
 });
-
-
-
-
-
-
-
-
 
 // function to start connection. Restart connection after 5 seconds
 function start() {
@@ -278,4 +278,32 @@ function render(props) {
 function appendPlayerRow(items, playerRowTemplate) {
     var elementToAppend = $(".players-table > tbody:last-child");
     processTemplate(items, playerRowTemplate, elementToAppend);
+}
+
+function enableNewGameButton(playerId) {
+    // id playerId is not provided - set default value for all buttons
+    if (typeof playerId === "undefined") {
+        $(".player-play-btn").each(function (index) {
+            $(this).html("Play");
+        });
+    }
+    else {
+        $("tr[player-id='" + playerId + "']").find(".player-play-btn").html("Play");
+    }
+
+    $(".players-table").removeClass("disabled");
+}
+
+function hidePlayer(playerId) {
+    var gamesRowElement = $("#player_" + playerId).closest("tr");
+    var playerRowElement = gamesRowElement.prev();
+    gamesRowElement.addClass("display-none");
+    playerRowElement.addClass("display-none");
+}
+
+function removePlayer(playerId) {
+    var gamesRowElement = $("#player_" + playerId).closest("tr");
+    var playerRowElement = gamesRowElement.prev();
+    gamesRowElement.remove();
+    playerRowElement.remove();
 }

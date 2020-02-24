@@ -16,6 +16,8 @@ namespace TicTacToe.WebUI.Models
 
         public string Name { get; set; }
 
+        public string GroupName { get; set; }
+
         public HashSet<string> ConnectionIds { get; set; }
 
         public List<SynchronizationAction> Actions { get; set; }

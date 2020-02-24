@@ -5,10 +5,10 @@
         public SynchronizationAction(string name)
         {
             Name = name;
-            Parameters = new object[] { };
+            Parameters = new string[] { };
         }
 
-        public SynchronizationAction(string name, object[] parameters)
+        public SynchronizationAction(string name, string[] parameters)
         {
             Name = name;
             Parameters = parameters;
@@ -16,6 +16,6 @@
 
         public string Name { get; set; }
 
-        public object[] Parameters { get; set; }
+        public string[] Parameters { get; set; }
     }
 }

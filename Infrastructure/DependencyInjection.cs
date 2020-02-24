@@ -23,6 +23,7 @@ namespace TicTacToe.Infrastructure
                 .AddEntityFrameworkStores<TicTacToeDbContext>();
 
             services.AddTransient<IDateTime, DateTimeService>();
+            services.AddTransient<IGuid, GuidService>();
 
             return services;
         }
