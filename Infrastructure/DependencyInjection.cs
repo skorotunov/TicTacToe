@@ -24,6 +24,7 @@ namespace TicTacToe.Infrastructure
 
             services.AddTransient<IDateTime, DateTimeService>();
             services.AddTransient<IGuid, GuidService>();
+            services.AddTransient<IRandom, RandomService>();
 
             return services;
         }

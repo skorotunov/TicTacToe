@@ -1,5 +1,4 @@
-﻿
-// signalR hub connection
+﻿// signalR hub connection
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/tictactoe")
     .configureLogging(signalR.LogLevel.Error)
@@ -28,10 +27,7 @@ connection.on("PlayerConnectHandle", function (players) {
         }
     }
     
-    // there are no active plaers
-    if (!$(".players-table tr:not(.display-none)").length) {
-        $(".no-players-message").show();
-    }
+    checkIfAnyPlayers();
 });
 
 // method that is called on the first player's connection being established to inform other players
@@ -50,11 +46,7 @@ connection.on("PlayerFirstTimeConnectHandle", function (playerId, playerName) {
 // method that is called on the last player's connection being disconected to inform other players
 connection.on("PlayerDisconnectHandle", function (playerId) {
     removePlayer(playerId);
-
-    // no active players left
-    if (!$(".players-table tr").length) {
-        $(".no-players-message").show();
-    }
+    checkIfAnyPlayers();
 });
 
 // method that is called when player opens game history for the first time in order to sinc other connections of the same user
@@ -64,8 +56,8 @@ connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
     var gamesTableElement = gamesRowElement.find(".games-table");
 
     // get games between two players
-    $.get("/api/players/" + playerId)
-        .done(function (data) {
+    $.get("/api/players/" + playerId
+        ).done(function (data) {
             var games = data["games"];
             if (games.length) {
                 // there are at least one game
@@ -111,8 +103,7 @@ connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
 
             gamesTableElement.addClass("initialized");
             gamesRowElement.find("div").collapse("show");
-        })
-        .fail(function () {
+        }).fail(function () {
             alert("Your request has failed. Please contact support.");
         });
 });
@@ -168,20 +159,24 @@ connection.on("NewGameDeclineHandle", function (playerId) {
     $("#gameRequestModal_" + playerId).modal("hide");
 });
 
-connection.on("NewGameAcceptCallerHandle", function (playerId) {
+// method that is called to handle UI changes for caller after new game is accepted
+connection.on("NewGameAcceptCallerHandle", function (player) {
     $(".modal").each(function (index) {
         $(this).modal("hide");
     });
-    hidePlayer(playerId);
+    hidePlayer(player.id);
+    checkIfAnyPlayers();
     $(".players-table").addClass("disabled");
-    $(".board-table").removeClass("disabled");
+    processTurnInfo(player);
 });
 
-connection.on("NewGameAcceptReceiverHandle", function (playerId) {
-    $("tr[player-id='" + playerId + "']").find(".player-play-btn").html("Play");
-    hidePlayer(playerId);
+// method that is called to handle UI changes for receiver after new game is accepted
+connection.on("NewGameAcceptReceiverHandle", function (player) {
+    $("tr[player-id='" + player.id + "']").find(".player-play-btn").html("Play");
+    hidePlayer(player.id);
+    checkIfAnyPlayers();
     $(".players-table").addClass("disabled");
-    $(".board-table").removeClass("disabled");
+    processTurnInfo(player);
 });
 
 // method that is called when player starts the game to inform other players
@@ -189,9 +184,7 @@ connection.on("NewGameAcceptOthersHandle", function (playerId) {
     hidePlayer(playerId);
 
     // no active players left
-    if (!$(".players-table tr:not(.display-none)").length) {
-        $(".no-players-message").show();
-    }
+    checkIfAnyPlayers();
 });
 
 // event handler on show player games history button
@@ -247,6 +240,30 @@ $(document).on("click", ".player-acceptGame-btn", function () {
     });
 });
 
+// event handler on board cell
+$(document).on("click", ".board-cell:not(.filled)", function () {
+    var tableElement = $(this).closest("table");
+    var partsArray = $(this).attr("id").split('-');
+    var xCell = partsArray[1];
+    var yCell = partsArray[2];
+    if (!tableElement.attr("game-id")) {
+        // post method to create new game in the database
+        $.ajax({
+            type: "POST",
+            url: "/api/games",
+            data: JSON.stringify({ PlayerId: "Test", IsCrossPlayer: true }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json"
+        }).done(function (data) {
+            tableElement.attr("game-id", data);
+        }).fail(function () {
+            alert("Your request has failed. Please contact support.");
+        });
+    }
+
+    var gameId = tableElement.attr("game-id");
+});
+
 // function to start connection. Restart connection after 5 seconds
 function start() {
     connection.start().catch(function (err) {
@@ -261,7 +278,7 @@ function getTemplate(name) {
     return $("script[data-template='" + name + "']").text().split(/\$\{(.+?)\}/g);
 }
 
-//function to fill splitted template
+// function to fill splitted template
 function processTemplate(items, templateItems, elementToAppend) {
     elementToAppend.append(items.map(function (item) {
         return templateItems.map(render(item)).join("");
@@ -275,11 +292,13 @@ function render(props) {
     };
 }
 
+// function to appened processed row
 function appendPlayerRow(items, playerRowTemplate) {
     var elementToAppend = $(".players-table > tbody:last-child");
     processTemplate(items, playerRowTemplate, elementToAppend);
 }
 
+// re-enable new game button after callback
 function enableNewGameButton(playerId) {
     // id playerId is not provided - set default value for all buttons
     if (typeof playerId === "undefined") {
@@ -294,6 +313,7 @@ function enableNewGameButton(playerId) {
     $(".players-table").removeClass("disabled");
 }
 
+// hide (but not remove) player and his games rows from players table
 function hidePlayer(playerId) {
     var gamesRowElement = $("#player_" + playerId).closest("tr");
     var playerRowElement = gamesRowElement.prev();
@@ -301,9 +321,38 @@ function hidePlayer(playerId) {
     playerRowElement.addClass("display-none");
 }
 
+// remove player and his games rows from players table
 function removePlayer(playerId) {
     var gamesRowElement = $("#player_" + playerId).closest("tr");
     var playerRowElement = gamesRowElement.prev();
     gamesRowElement.remove();
     playerRowElement.remove();
+}
+
+// update turn info for players
+function processTurnInfo(player) {
+    var infoMessage;
+    if (player.isCrossPlayer) {
+        // it is opponent turn
+        infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + player.name + "</i></strong>.";
+        $(".wait-turn-message").each(function (index) {
+            $(this).removeClass("display-none");
+        });
+    }
+    else {
+        // your turn
+        infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + player.name + "</i></strong>.";
+        $(".your-turn-message").removeClass("display-none");
+        $(".board-table").removeClass("disabled");
+    }
+
+    $(".game-info-message").html(infoMessage).removeClass("display-none");
+}
+
+// check if there are still lefat any players. If no - show message
+function checkIfAnyPlayers() {
+    // no active players left
+    if (!$(".players-table tr:not(.display-none)").length) {
+        $(".no-players-message").show();
+    }
 }

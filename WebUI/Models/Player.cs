@@ -18,6 +18,10 @@ namespace TicTacToe.WebUI.Models
 
         public string GroupName { get; set; }
 
+        public bool IsWaitingForMove { get; set; }
+
+        public bool IsCrossPlayer { get; set; }
+
         public HashSet<string> ConnectionIds { get; set; }
 
         public List<SynchronizationAction> Actions { get; set; }

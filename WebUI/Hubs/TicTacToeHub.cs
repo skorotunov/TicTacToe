@@ -17,11 +17,13 @@ namespace TicTacToe.WebUI.Hubs
 
         private readonly ICurrentUserService currentUserService;
         private readonly IGuid guid;
+        private readonly IRandom random;
 
-        public TicTacToeHub(ICurrentUserService currentUserService, IGuid guid)
+        public TicTacToeHub(ICurrentUserService currentUserService, IGuid guid, IRandom random)
         {
             this.currentUserService = currentUserService;
             this.guid = guid;
+            this.random = random;
         }
 
         public override async Task OnConnectedAsync()
@@ -193,7 +195,7 @@ namespace TicTacToe.WebUI.Hubs
                     lock (LockObject)
                     {
                         // check if target player is waiting for another game
-                        if (receiver.Actions.Where(x => x.Name == "NewGameStartCallerHandle").Any())
+                        if (receiver.Actions.LastOrDefault()?.Name == "NewGameStartCallerHandle")
                         {
                             caller.Actions.RemoveAll(x => x.Name == "NewGameFailureHandle");
                             caller.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
@@ -313,6 +315,24 @@ namespace TicTacToe.WebUI.Hubs
                     caller.GroupName = guidString;
                     receiver.GroupName = guidString;
 
+                    // coin Toss
+                    if (random.Next(0, 1) == 0)
+                    {
+                        // caller will make the first move and will play with cross
+                        caller.IsWaitingForMove = false;
+                        caller.IsCrossPlayer = true;
+                        receiver.IsWaitingForMove = true;
+                        receiver.IsCrossPlayer = false;
+                    }
+                    else
+                    {
+                        // receiver make the first move and will play with cross
+                        caller.IsWaitingForMove = true;
+                        caller.IsCrossPlayer = false;
+                        receiver.IsWaitingForMove = false;
+                        receiver.IsWaitingForMove = false;
+                    }
+
                     foreach (string callerConnectionId in caller.ConnectionIds)
                     {
                         tasks.Add(Groups.AddToGroupAsync(callerConnectionId, guidString));
@@ -332,8 +352,8 @@ namespace TicTacToe.WebUI.Hubs
                 }
 
                 // add methods that will handler start of the new game
-                tasks.Add(Clients.User(caller.Id).SendAsync("NewGameAcceptCallerHandle", receiver.Id));
-                tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameAcceptReceiverHandle", caller.Id));
+                tasks.Add(Clients.User(caller.Id).SendAsync("NewGameAcceptCallerHandle", receiver));
+                tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameAcceptReceiverHandle", caller));
 
                 await Task.WhenAll(tasks);
             }

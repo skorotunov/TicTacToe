@@ -4,25 +4,30 @@
 <div class="row">
     <div class="col-md-5">
         <div class="boardContainer container">
-            <h5 class="display-none">Your are playing as O against testUser.</h5>
-            <h5 class="display-none">It's your turn. Please make your move.</h5>
-            <h5 class="display-none">It's your opponent turn. Please wait.</h5>
-            <table class="board-table disabled">
+            <div class="game-info">
+                <span class="display-none game-info-message"></span>
+                <span class="display-none your-turn-message">It's your turn. Please make your move.</span>
+                <span class="display-none wait-turn-message">It's your opponent turn. Please wait.</span>
+                <div class="spinner-border text-secondary display-none wait-turn-message" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+            <table class="board-table disabled" game-id="">
                 <tbody>
                     <tr>
-                        <td class="board-cell filled noselect" id="pos-0-0">X</td>
-                        <td class="board-cell noselect" id="pos-0-1"></td>
-                        <td class="board-cell noselect" id="pos-0-2"></td>
-                    </tr>
-                    <tr>
-                        <td class="board-cell noselect" id="pos-1-0"></td>
-                        <td class="board-cell noselect" id="pos-1-1"></td>
-                        <td class="board-cell noselect filled" id="pos-1-2">O</td>
-                    </tr>
-                    <tr>
-                        <td class="board-cell noselect" id="pos-2-0"></td>
-                        <td class="board-cell noselect" id="pos-2-1"></td>
+                        <td class="board-cell filled noselect" id="pos-0-2">X</td>
+                        <td class="board-cell noselect" id="pos-1-2"></td>
                         <td class="board-cell noselect" id="pos-2-2"></td>
+                    </tr>   
+                    <tr>
+                        <td class="board-cell noselect" id="pos-0-1"></td>
+                        <td class="board-cell noselect" id="pos-1-1"></td>
+                        <td class="board-cell noselect filled" id="pos-2-1">O</td>
+                    </tr>
+                    <tr>
+                        <td class="board-cell noselect" id="pos-0-0"></td>
+                        <td class="board-cell noselect" id="pos-1-0"></td>
+                        <td class="board-cell noselect" id="pos-2-0"></td>
                     </tr>
                 </tbody>
             </table>

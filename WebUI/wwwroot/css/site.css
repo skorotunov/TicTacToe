@@ -211,7 +211,6 @@ body {
 
 @media (min-width: 1200px) {
     .board-table td {
-        border-right: 3px solid red;
         width: 160px;
         height: 160px;
         font-size: 100px;
@@ -220,7 +219,6 @@ body {
 
 @media (min-width: 1400px) {
     .board-table td {
-        border-right: 3px solid red;
         width: 180px;
         height: 180px;
         font-size: 115px;
@@ -229,7 +227,6 @@ body {
 
 @media (min-width: 1600px) {
     .board-table td {
-        border-right: 3px solid red;
         width: 200px;
         height: 200px;
         font-size: 130px;
@@ -295,10 +292,20 @@ table.disabled {
     text-transform: uppercase;
 }
 
-.display-none {
-    display: none;
-}
-
 .modal-content {
     background-color: #333;
+}
+
+.spinner-border {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+}
+
+.game-info {
+    font-size: 1.5em;
+}
+
+.display-none {
+    display: none;
 }
