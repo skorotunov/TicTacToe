@@ -316,7 +316,7 @@ namespace TicTacToe.WebUI.Hubs
                     receiver.GroupName = guidString;
 
                     // coin Toss
-                    if (random.Next(0, 1) == 0)
+                    if (random.Next(0, 2) == 0)
                     {
                         // caller will make the first move and will play with cross
                         caller.IsWaitingForMove = false;
@@ -330,7 +330,7 @@ namespace TicTacToe.WebUI.Hubs
                         caller.IsWaitingForMove = true;
                         caller.IsCrossPlayer = false;
                         receiver.IsWaitingForMove = false;
-                        receiver.IsWaitingForMove = false;
+                        receiver.IsCrossPlayer = true;
                     }
 
                     foreach (string callerConnectionId in caller.ConnectionIds)
@@ -356,6 +356,33 @@ namespace TicTacToe.WebUI.Hubs
                 tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameAcceptReceiverHandle", caller));
 
                 await Task.WhenAll(tasks);
+            }
+        }
+
+        /// <summary>
+        /// New game was created. Therefore id of this game should be sent to the opponent.
+        /// </summary>
+        /// <param name="gameId">Id of the created game</param>
+        /// <returns></returns>
+        public async Task OnNewGameCreate(int gameId)
+        {
+            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller))
+            {
+                await Clients.OthersInGroup(caller.GroupName).SendAsync("NewGameCreateHandle", gameId);
+            }
+        }
+
+        /// <summary>
+        /// Turn was made by one of the players
+        /// </summary>
+        /// <param name="x">X coordinate of the cell</param>
+        /// <param name="y">Y coordinate of the cell</param>
+        /// <returns></returns>
+        public async Task OnTurnComplete(byte x, byte y)
+        {
+            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller))
+            {
+                await Clients.OthersInGroup(caller.GroupName).SendAsync("TurnCompleteHandle", x, y);
             }
         }
     }

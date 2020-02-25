@@ -6,7 +6,7 @@ namespace TicTacToe.Application.Games.Commands.CreateGame
     {
         public CreateGameCommandValidator()
         {
-            RuleFor(x => x.PlayerId)
+            RuleFor(x => x.OpponentId)
                 .MaximumLength(450)
                 .NotEmpty().WithMessage("Player ID is required.");
         }

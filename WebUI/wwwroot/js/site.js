@@ -187,6 +187,23 @@ connection.on("NewGameAcceptOthersHandle", function (playerId) {
     checkIfAnyPlayers();
 });
 
+// method that is called when new game is created and it's id is sent to other connections in the group
+connection.on("NewGameCreateHandle", function (gameId) {
+    $(".boardContainer").attr("game-id", gameId);
+});
+
+// method that is called after one player made his turn
+connection.on("TurnCompleteHandle", function (x, y) {
+    var cellElement = $("#pos-" + x + "-" + y);
+    var isOpponentCrossPlayer = $.parseJSON($(".boardContainer").attr("is-opponent-cross-player").toLowerCase());
+    fillCell(cellElement, !isOpponentCrossPlayer);
+    $(".your-turn-message").removeClass("display-none");
+    $(".wait-turn-message").each(function (index) {
+        $(this).addClass("display-none");
+    });
+    $(".board-table").removeClass("disabled");
+});
+
 // event handler on show player games history button
 $(document).on("click", ".player-history-btn", function () {
     var playerRowElement = $(this).closest("tr");
@@ -242,26 +259,48 @@ $(document).on("click", ".player-acceptGame-btn", function () {
 
 // event handler on board cell
 $(document).on("click", ".board-cell:not(.filled)", function () {
-    var tableElement = $(this).closest("table");
+    var cellElement = $(this);
+    var boardElement = $(".boardContainer");
     var partsArray = $(this).attr("id").split('-');
-    var xCell = partsArray[1];
-    var yCell = partsArray[2];
-    if (!tableElement.attr("game-id")) {
+    var gameId = boardElement.attr("game-id");
+    var xCell = parseInt(partsArray[1], 10);
+    var yCell = parseInt(partsArray[2], 10);
+    
+    var isOpponentCrossPlayer = $.parseJSON(boardElement.attr("is-opponent-cross-player").toLowerCase());
+    var url;
+    if (isOpponentCrossPlayer) {
+        url = "/api/noughtplayergametiles";
+    }
+    else {
+        url = "/api/crossplayergametiles";
+    }
+
+    // game needs to be created
+    if (!gameId) {
         // post method to create new game in the database
         $.ajax({
             type: "POST",
             url: "/api/games",
-            data: JSON.stringify({ PlayerId: "Test", IsCrossPlayer: true }),
+            data: JSON.stringify({
+                opponentId: boardElement.attr("opponent-id"),
+                isOpponentCrossPlayer: isOpponentCrossPlayer
+            }),
             contentType: "application/json; charset=utf-8",
             dataType: "json"
         }).done(function (data) {
-            tableElement.attr("game-id", data);
+            boardElement.attr("game-id", data);
+            connection.invoke("OnNewGameCreate", data).catch(err => {
+                alert("Your request has failed. Please contact support.");
+            });
+
+            insertMove(cellElement, data, xCell, yCell, isOpponentCrossPlayer, url);
         }).fail(function () {
             alert("Your request has failed. Please contact support.");
         });
     }
-
-    var gameId = tableElement.attr("game-id");
+    else {
+        insertMove(cellElement, parseInt(gameId, 10), xCell, yCell, isOpponentCrossPlayer, url);
+    }
 });
 
 // function to start connection. Restart connection after 5 seconds
@@ -330,18 +369,21 @@ function removePlayer(playerId) {
 }
 
 // update turn info for players
-function processTurnInfo(player) {
+function processTurnInfo(opponent) {
     var infoMessage;
-    if (player.isCrossPlayer) {
+    var boardElement = $(".boardContainer");
+    boardElement.attr("opponent-id", opponent.id);
+    boardElement.attr("is-opponent-cross-player", opponent.isCrossPlayer);
+    if (opponent.isCrossPlayer) {
         // it is opponent turn
-        infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + player.name + "</i></strong>.";
+        infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
         $(".wait-turn-message").each(function (index) {
             $(this).removeClass("display-none");
         });
     }
     else {
         // your turn
-        infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + player.name + "</i></strong>.";
+        infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
         $(".your-turn-message").removeClass("display-none");
         $(".board-table").removeClass("disabled");
     }
@@ -355,4 +397,45 @@ function checkIfAnyPlayers() {
     if (!$(".players-table tr:not(.display-none)").length) {
         $(".no-players-message").show();
     }
+}
+
+// fill cell with X or O
+function fillCell(cellElement, isOpponentCrossPlayer) {
+    cellElement.addClass("filled");
+    if (isOpponentCrossPlayer) {
+        cellElement.text("O");
+    }
+    else {
+        cellElement.text("X");
+    }
+}
+
+// insert player's move to the databse
+function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, url) {
+    // post method to create new move in the database
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: JSON.stringify({
+            gameId: gameId,
+            x: xCell,
+            y: yCell
+        }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json"
+    }).done(function (data) {
+        // turn has ended
+        fillCell(cellElement, isOpponentCrossPlayer);
+        $(".your-turn-message").addClass("display-none");
+        $(".board-table").addClass("disabled");
+        $(".wait-turn-message").each(function (index) {
+            $(this).removeClass("display-none");
+        });
+
+        connection.invoke("OnTurnComplete", xCell, yCell).catch(err => {
+            alert("Your request has failed. Please contact support.");
+        });
+    }).fail(function () {
+        alert("Your request has failed. Please contact support.");
+    });
 }
