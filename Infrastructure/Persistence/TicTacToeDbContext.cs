@@ -16,13 +16,9 @@ namespace TicTacToe.Infrastructure.Persistence
 
         public DbSet<CrossPlayerGameTile> CrossPlayerGameTiles { get; set; }
 
-        public DbSet<CrossPlayerGameWinCondition> CrossPlayerGameWinConditions { get; set; }
-
         public DbSet<Game> Games { get; set; }
 
         public DbSet<NoughtPlayerGameTile> NoughtPlayerGameTiles { get; set; }
-
-        public DbSet<NoughtPlayerGameWinCondition> NoughtPlayerGameWinConditions { get; set; }
 
         public DbSet<Tile> Tiles { get; set; }
 

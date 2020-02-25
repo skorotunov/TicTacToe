@@ -17,14 +17,10 @@ connection.on("PlayerConnectHandle", function (players) {
         var player = players[i];
         var items = [{
             playerName: player.name,
-            playerId: player.id,
-            groupName: player.groupName
+            playerId: player.id
         }];
 
         appendPlayerRow(items, playerRowTemplate);
-        if (player.groupName) {
-            hidePlayer(player.id);
-        }
     }
     
     checkIfAnyPlayers();
@@ -47,6 +43,16 @@ connection.on("PlayerFirstTimeConnectHandle", function (playerId, playerName) {
 connection.on("PlayerDisconnectHandle", function (playerId) {
     removePlayer(playerId);
     checkIfAnyPlayers();
+});
+
+// method that is called on the last player's connection being disconected from the game with another player
+connection.on("PlayerInGameDisconnectHandle", function () {
+    var alertElement = $("#failure-alert");
+    alertElement.html("We are sorry. Your opponent has just left the game. You can continue it later.");
+    alertElement.fadeTo(2000, 500).slideUp(500, function () {
+        alertElement.slideUp(500);
+        gameFinish();
+    });
 });
 
 // method that is called when player opens game history for the first time in order to sinc other connections of the same user
@@ -164,7 +170,7 @@ connection.on("NewGameAcceptCallerHandle", function (player) {
     $(".modal").each(function (index) {
         $(this).modal("hide");
     });
-    hidePlayer(player.id);
+    removePlayer(player.id);
     checkIfAnyPlayers();
     $(".players-table").addClass("disabled");
     processTurnInfo(player);
@@ -173,7 +179,7 @@ connection.on("NewGameAcceptCallerHandle", function (player) {
 // method that is called to handle UI changes for receiver after new game is accepted
 connection.on("NewGameAcceptReceiverHandle", function (player) {
     $("tr[player-id='" + player.id + "']").find(".player-play-btn").html("Play");
-    hidePlayer(player.id);
+    removePlayer(player.id);
     checkIfAnyPlayers();
     $(".players-table").addClass("disabled");
     processTurnInfo(player);
@@ -181,7 +187,7 @@ connection.on("NewGameAcceptReceiverHandle", function (player) {
 
 // method that is called when player starts the game to inform other players
 connection.on("NewGameAcceptOthersHandle", function (playerId) {
-    hidePlayer(playerId);
+    removePlayer(playerId);
 
     // no active players left
     checkIfAnyPlayers();
@@ -192,8 +198,8 @@ connection.on("NewGameCreateHandle", function (gameId) {
     $(".boardContainer").attr("game-id", gameId);
 });
 
-// method that is called after one player made his turn
-connection.on("TurnCompleteHandle", function (x, y) {
+// method that is called for receiver after one player made his turn
+connection.on("TurnCompleteReceiverHandle", function (x, y) {
     var cellElement = $("#pos-" + x + "-" + y);
     var isOpponentCrossPlayer = $.parseJSON($(".boardContainer").attr("is-opponent-cross-player").toLowerCase());
     fillCell(cellElement, !isOpponentCrossPlayer);
@@ -202,6 +208,42 @@ connection.on("TurnCompleteHandle", function (x, y) {
         $(this).addClass("display-none");
     });
     $(".board-table").removeClass("disabled");
+});
+
+// method that is called for caller after one player made his turn
+connection.on("TurnCompleteCallerHandle", function (x, y) {
+    var cellElement = $("#pos-" + x + "-" + y);
+    var isOpponentCrossPlayer = $.parseJSON($(".boardContainer").attr("is-opponent-cross-player").toLowerCase());
+    fillCell(cellElement, isOpponentCrossPlayer);
+
+    $(".your-turn-message").addClass("display-none");
+    $(".board-table").addClass("disabled");
+    $(".wait-turn-message").each(function (index) {
+        $(this).removeClass("display-none");
+    });
+});
+
+// method that is called after the game is finished
+connection.on("GameEndHandle", function (result) {
+    var alertElement;
+    var isOpponentCrossPlayer = $.parseJSON($(".boardContainer").attr("is-opponent-cross-player").toLowerCase());
+    if ((result === "Win" && !isOpponentCrossPlayer) || (result === "Loss" && isOpponentCrossPlayer)) {
+        alertElement = $("#success-alert");
+        alertElement.html("Congratulations! You won the game.");
+    }
+    else if ((result === "Loss" && !isOpponentCrossPlayer) || (result === "Win" && isOpponentCrossPlayer)) {
+        alertElement = $("#failure-alert");
+        alertElement.html("Sorry! You lose the game. Try again later.");
+    }
+    else {
+        alertElement = $("#warning-alert");
+        alertElement.html("Game has ended in a draw. Try again later.");
+    }
+
+    alertElement.fadeTo(2000, 500).slideUp(500, function () {
+        alertElement.slideUp(500);
+        gameFinish();
+    });
 });
 
 // event handler on show player games history button
@@ -352,14 +394,6 @@ function enableNewGameButton(playerId) {
     $(".players-table").removeClass("disabled");
 }
 
-// hide (but not remove) player and his games rows from players table
-function hidePlayer(playerId) {
-    var gamesRowElement = $("#player_" + playerId).closest("tr");
-    var playerRowElement = gamesRowElement.prev();
-    gamesRowElement.addClass("display-none");
-    playerRowElement.addClass("display-none");
-}
-
 // remove player and his games rows from players table
 function removePlayer(playerId) {
     var gamesRowElement = $("#player_" + playerId).closest("tr");
@@ -394,7 +428,7 @@ function processTurnInfo(opponent) {
 // check if there are still lefat any players. If no - show message
 function checkIfAnyPlayers() {
     // no active players left
-    if (!$(".players-table tr:not(.display-none)").length) {
+    if (!$(".players-table tr").length) {
         $(".no-players-message").show();
     }
 }
@@ -432,10 +466,25 @@ function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, ur
             $(this).removeClass("display-none");
         });
 
-        connection.invoke("OnTurnComplete", xCell, yCell).catch(err => {
+        connection.invoke("OnTurnComplete", gameId, xCell, yCell).catch(err => {
             alert("Your request has failed. Please contact support.");
         });
     }).fail(function () {
         alert("Your request has failed. Please contact support.");
     });
+}
+
+// clean up fields after game was finished
+function gameFinish() {
+    $(".game-info-message").addClass("display-none");
+    $(".your-turn-message").addClass("display-none");
+    $(".wait-turn-message").each(function (index) {
+        $(this).addClass("display-none");
+    });
+    $(".board-cell").each(function (index) {
+        $(this).html("");
+        $(this).removeClass("filled");
+    });
+    $(".board-table").addClass("disabled");
+    $(".players-table").removeClass("disabled");
 }

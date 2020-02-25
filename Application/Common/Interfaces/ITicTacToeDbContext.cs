@@ -9,13 +9,9 @@ namespace TicTacToe.Application.Common.Interfaces
     {
         DbSet<CrossPlayerGameTile> CrossPlayerGameTiles { get; set; }
 
-        DbSet<CrossPlayerGameWinCondition> CrossPlayerGameWinConditions { get; set; }
-
         DbSet<Game> Games { get; set; }
 
         DbSet<NoughtPlayerGameTile> NoughtPlayerGameTiles { get; set; }
-
-        DbSet<NoughtPlayerGameWinCondition> NoughtPlayerGameWinConditions { get; set; }
 
         DbSet<Tile> Tiles { get; set; }
 

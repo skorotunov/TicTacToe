@@ -15,9 +15,7 @@ namespace TicTacToe.Domain.Entities
 
             // initialize collections with default values in order to prevent null checks
             CrossPlayerGameTiles = new List<CrossPlayerGameTile>();
-            CrossPlayerGameWinConditions = new List<CrossPlayerGameWinCondition>();
             NoughtPlayerGameTiles = new List<NoughtPlayerGameTile>();
-            NoughtPlayerGameWinConditions = new List<NoughtPlayerGameWinCondition>();
         }
 
         /// <summary>
@@ -41,11 +39,6 @@ namespace TicTacToe.Domain.Entities
         public IList<CrossPlayerGameTile> CrossPlayerGameTiles { get; set; }
 
         /// <summary>
-        /// Current winning conditions of the TicTacToeUser that is playing with cross character.
-        /// </summary>
-        public IList<CrossPlayerGameWinCondition> CrossPlayerGameWinConditions { get; set; }
-
-        /// <summary>
         /// ID of the TicTacToeUser that is playing with nought character.
         /// </summary>
         public string NoughtPlayerId { get; set; }
@@ -56,13 +49,13 @@ namespace TicTacToe.Domain.Entities
         public IList<NoughtPlayerGameTile> NoughtPlayerGameTiles { get; set; }
 
         /// <summary>
-        /// Current winning conditions of the TicTacToeUser that is playing with nought character.
-        /// </summary>
-        public IList<NoughtPlayerGameWinCondition> NoughtPlayerGameWinConditions { get; set; }
-
-        /// <summary>
         /// Result of the game for the player which played with cross character - win, loss, draw, still in progress
         /// </summary>
         public GameResult Result { get; set; }
+
+        /// <summary>
+        /// Current turn number
+        /// </summary>
+        public byte TurnNumber { get; set; }
     }
 }

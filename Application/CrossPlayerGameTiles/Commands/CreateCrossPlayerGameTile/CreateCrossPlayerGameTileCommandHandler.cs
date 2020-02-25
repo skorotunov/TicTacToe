@@ -19,7 +19,7 @@ namespace TicTacToe.Application.CrossPlayerGameTiles.Commands.CreateCrossPlayerG
 
         public async Task<int> Handle(CreateCrossPlayerGameTileCommand request, CancellationToken cancellationToken)
         {
-            Tile tileEntity = await context.Tiles.AsQueryable().FirstOrDefaultAsync(x => x.X == request.X && x.Y == request.Y);
+            Tile tileEntity = await context.Tiles.AsNoTracking().FirstOrDefaultAsync(x => x.X == request.X && x.Y == request.Y);
             if (tileEntity == null)
             {
                 throw new NotFoundException(nameof(Tile), null);

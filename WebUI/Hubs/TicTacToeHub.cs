@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Application.Games.Commands.CheckAndUpdateGameWinConditions;
+using TicTacToe.Domain.Enums;
 using TicTacToe.WebUI.Models;
 
 namespace TicTacToe.WebUI.Hubs
@@ -18,12 +21,14 @@ namespace TicTacToe.WebUI.Hubs
         private readonly ICurrentUserService currentUserService;
         private readonly IGuid guid;
         private readonly IRandom random;
+        private readonly IMediator mediator;
 
-        public TicTacToeHub(ICurrentUserService currentUserService, IGuid guid, IRandom random)
+        public TicTacToeHub(ICurrentUserService currentUserService, IGuid guid, IRandom random, IMediator mediator)
         {
             this.currentUserService = currentUserService;
             this.guid = guid;
             this.random = random;
+            this.mediator = mediator;
         }
 
         public override async Task OnConnectedAsync()
@@ -54,8 +59,7 @@ namespace TicTacToe.WebUI.Hubs
 
                     // always broadcast this to show players list for the new connection
                     var availablePlayers = PlayersCollection.AvailablePlayers.Where(x => x.Key != playerNotInTheGame.Id).Select(x => x.Value).ToList();
-                    var playersInGame = PlayersCollection.InTheGamePlayers.Select(x => x.Value).ToList();
-                    tasks.Add(Clients.Caller.SendAsync("PlayerConnectHandle", availablePlayers.Union(playersInGame)));
+                    tasks.Add(Clients.Caller.SendAsync("PlayerConnectHandle", availablePlayers));
 
                     // check if this is a first connection of the user
                     if (playerNotInTheGame.ConnectionIds.Count == 1)
@@ -105,11 +109,27 @@ namespace TicTacToe.WebUI.Hubs
                 {
                     playerInTheGame.ConnectionIds.RemoveWhere(x => x.Equals(connectionId));
                     tasks.Add(Groups.RemoveFromGroupAsync(connectionId, playerInTheGame.GroupName));
+
+                    // check that last player connection was disconnected. In that case we need to inform opponent and all other players
                     if (!playerInTheGame.ConnectionIds.Any())
                     {
-                        PlayersCollection.InTheGamePlayers.TryRemove(playerInTheGame.Id, out Player _);
+                        tasks.Add(Clients.Group(playerInTheGame.GroupName).SendAsync("PlayerInGameDisconnectHandle"));
 
-                        // TODO: inform another player that this player has left the game
+                        // find opponent user
+                        Player opponent = PlayersCollection.InTheGamePlayers.FirstOrDefault(x => x.Key != playerInTheGame.Id && x.Value.GroupName == playerInTheGame.GroupName).Value;
+                        if (opponent != null)
+                        {
+                            // infor other players that now opponent is available
+                            tasks.Add(Clients.AllExcept(opponent.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", opponent.Id, opponent.Name));
+
+                            // move opponent to available players list
+                            if (PlayersCollection.InTheGamePlayers.TryRemove(opponent.Id, out Player _))
+                            {
+                                PlayersCollection.AvailablePlayers.TryAdd(opponent.Id, opponent);
+                            }
+                        }
+
+                        PlayersCollection.InTheGamePlayers.TryRemove(playerInTheGame.Id, out Player _);
                     }
                 }
             }
@@ -120,10 +140,11 @@ namespace TicTacToe.WebUI.Hubs
                     playerNotInTheGame.ConnectionIds.RemoveWhere(x => x.Equals(connectionId));
                     if (!playerNotInTheGame.ConnectionIds.Any())
                     {
-                        PlayersCollection.AvailablePlayers.TryRemove(playerNotInTheGame.Id, out Player _);
-
-                        // only broadcast this info if this is the last connection of the user and the user actual is now disconnected from all connections
-                        tasks.Add(Clients.Others.SendAsync("PlayerDisconnectHandle", playerNotInTheGame.Id));
+                        if (PlayersCollection.AvailablePlayers.TryRemove(playerNotInTheGame.Id, out Player _))
+                        {
+                            // only broadcast this info if this is the last connection of the user and the user actual is now disconnected from all connections
+                            tasks.Add(Clients.Others.SendAsync("PlayerDisconnectHandle", playerNotInTheGame.Id));
+                        }
                     }
                 }
             }
@@ -378,11 +399,56 @@ namespace TicTacToe.WebUI.Hubs
         /// <param name="x">X coordinate of the cell</param>
         /// <param name="y">Y coordinate of the cell</param>
         /// <returns></returns>
-        public async Task OnTurnComplete(byte x, byte y)
+        public async Task OnTurnComplete(int gameId, byte x, byte y)
         {
+            var tasks = new List<Task>();
+
+            // register turn of the game and check win conditions
+            GameResult result = await mediator.Send(new CheckAndUpdateGameWinConditionsCommand(gameId));
             if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
-                await Clients.OthersInGroup(caller.GroupName).SendAsync("TurnCompleteHandle", x, y);
+                lock (LockObject)
+                {
+                    // find opponent user
+                    Player receiver = PlayersCollection.InTheGamePlayers.FirstOrDefault(x => x.Key != caller.Id && x.Value.GroupName == caller.GroupName).Value;
+                    if (receiver != null)
+                    {
+                        // add handle methods for caller and receiver connections
+                        tasks.Add(Clients.GroupExcept(caller.GroupName, caller.ConnectionIds.ToList()).SendAsync("TurnCompleteReceiverHandle", x, y));
+                        tasks.Add(Clients.GroupExcept(receiver.GroupName, receiver.ConnectionIds.ToList()).SendAsync("TurnCompleteCallerHandle", x, y));
+
+                        // check if game has ended
+                        if (result != GameResult.Active)
+                        {
+                            tasks.Add(Clients.Group(caller.GroupName).SendAsync("GameEndHandle", result.ToString()));
+
+                            // move to the available collection
+                            if (PlayersCollection.InTheGamePlayers.TryRemove(caller.Id, out Player _))
+                            {
+                                PlayersCollection.AvailablePlayers.TryAdd(caller.Id, caller);
+                            }
+
+                            if (PlayersCollection.InTheGamePlayers.TryRemove(receiver.Id, out Player _))
+                            {
+                                PlayersCollection.AvailablePlayers.TryAdd(receiver.Id, receiver);
+                            }
+
+                            // cleanup game data
+                            caller.GroupName = null;
+                            caller.IsWaitingForMove = false;
+                            caller.IsCrossPlayer = false;
+                            receiver.GroupName = null;
+                            receiver.IsWaitingForMove = false;
+                            receiver.IsCrossPlayer = false;
+
+                            // inform other players that game participants are now available for the game
+                            tasks.Add(Clients.AllExcept(caller.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", caller.Id, caller.Name));
+                            tasks.Add(Clients.AllExcept(receiver.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", receiver.Id, receiver.Name));
+                        }
+                    }
+                }
+
+                await Task.WhenAll(tasks);
             }
         }
     }

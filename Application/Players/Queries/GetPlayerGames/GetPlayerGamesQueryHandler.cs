@@ -28,6 +28,7 @@ namespace TicTacToe.Application.Players.Queries.GetPlayerGames
                     .Where(x => (x.CrossPlayerId == request.PlayerId || x.NoughtPlayerId == request.PlayerId)
                              && (x.CrossPlayerId == request.CurrentPlayerId || x.NoughtPlayerId == request.CurrentPlayerId))
                     .OrderByDescending(x => x.StartDate)
+                    .AsNoTracking()
                     .ProjectTo<GameDTO>(mapper.ConfigurationProvider, new { currentUserId = request.CurrentPlayerId })
                     .ToListAsync(cancellationToken)
             };

@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TicTacToe.Infrastructure.Persistence;
 
 namespace TicTacToe.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TicTacToeDbContext))]
-    partial class TicTacToeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200225123048_Add TurnNumber field to Games table")]
+    partial class AddTurnNumberfieldtoGamestable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -176,6 +178,28 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                     b.ToTable("CrossPlayerGameTiles");
                 });
 
+            modelBuilder.Entity("TicTacToe.Domain.Entities.CrossPlayerGameWinCondition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("WinConditionId")
+                        .HasColumnType("tinyint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("WinConditionId");
+
+                    b.ToTable("CrossPlayerGameWinConditions");
+                });
+
             modelBuilder.Entity("TicTacToe.Domain.Entities.Game", b =>
                 {
                     b.Property<int>("Id")
@@ -227,6 +251,28 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                     b.HasIndex("TileId");
 
                     b.ToTable("NoughtPlayerGameTiles");
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Entities.NoughtPlayerGameWinCondition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("WinConditionId")
+                        .HasColumnType("tinyint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("WinConditionId");
+
+                    b.ToTable("NoughtPlayerGameWinConditions");
                 });
 
             modelBuilder.Entity("TicTacToe.Domain.Entities.Tile", b =>
@@ -642,6 +688,21 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TicTacToe.Domain.Entities.CrossPlayerGameWinCondition", b =>
+                {
+                    b.HasOne("TicTacToe.Domain.Entities.Game", "Game")
+                        .WithMany("CrossPlayerGameWinConditions")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TicTacToe.Domain.Entities.WinCondition", "WinCondition")
+                        .WithMany("CrossPlayerGameWinConditions")
+                        .HasForeignKey("WinConditionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("TicTacToe.Domain.Entities.NoughtPlayerGameTile", b =>
                 {
                     b.HasOne("TicTacToe.Domain.Entities.Game", "Game")
@@ -653,6 +714,21 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                     b.HasOne("TicTacToe.Domain.Entities.Tile", "Tile")
                         .WithMany("NoughtPlayerGameTiles")
                         .HasForeignKey("TileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Entities.NoughtPlayerGameWinCondition", b =>
+                {
+                    b.HasOne("TicTacToe.Domain.Entities.Game", "Game")
+                        .WithMany("NoughtPlayerGameWinConditions")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TicTacToe.Domain.Entities.WinCondition", "WinCondition")
+                        .WithMany("NoughtPlayerGameWinConditions")
+                        .HasForeignKey("WinConditionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
