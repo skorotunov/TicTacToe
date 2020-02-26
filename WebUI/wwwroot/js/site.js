@@ -1,5 +1,7 @@
-﻿// signalR hub connection
-const connection = new signalR.HubConnectionBuilder()
+﻿"use strict";
+
+// signalR hub connection
+var connection = new signalR.HubConnectionBuilder()
     .withUrl("/tictactoe")
     .configureLogging(signalR.LogLevel.Error)
     .build();
