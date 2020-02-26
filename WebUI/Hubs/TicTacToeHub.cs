@@ -163,6 +163,22 @@ namespace TicTacToe.WebUI.Hubs
                     playerNotInTheGame.ConnectionIds.RemoveWhere(x => x.Equals(connectionId));
                     if (!playerNotInTheGame.ConnectionIds.Any())
                     {
+                        // process caller
+                        // get all playerIds of the other players that are waiting for the response of the new game with caller.
+                        // There should not be many players waiting for one specific player. Therefore, regular foreach should be more efficient than Parallel
+                        foreach (SynchronizationAction action in playerNotInTheGame.Actions.Where(x => x.Name == "NewGameStartReceiverHandle" && x.Parameters.First() != playerNotInTheGame.Id))
+                        {
+                            if (PlayersCollection.AvailablePlayers.TryGetValue(action.Parameters.First(), out Player waitingPlayer))
+                            {
+                                // add single NewGameFailureHandle method at the end of the actions list. It will enable UI for new user's connections
+                                waitingPlayer.Actions.RemoveAll(x => x.Name == "NewGameFailureHandle");
+                                waitingPlayer.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
+
+                                // add specific NewGameFailureHandle method to show alert for existing user's connections
+                                tasks.Add(Clients.User(waitingPlayer.Id).SendAsync("NewGameFailureHandle", playerNotInTheGame.Id, $"Sorry, {playerNotInTheGame.Name} has already disconnected."));
+                            }
+                        }
+
                         if (PlayersCollection.AvailablePlayers.TryRemove(playerNotInTheGame.Id, out Player _))
                         {
                             // only broadcast this info if this is the last connection of the user and the user actual is now disconnected from all connections
