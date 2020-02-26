@@ -102,11 +102,11 @@ connection.on("PlayerDisconnectHandle", function (playerId) {
 
 // method that is called on the last player's connection being disconected from the game with another player
 connection.on("PlayerInGameDisconnectHandle", function () {
+    gameFinish();
     var alertElement = $("#failure-alert");
     alertElement.html("We are sorry. Your opponent has just left the game. You can continue it later.");
     alertElement.fadeTo(2000, 500).slideUp(500, function () {
         alertElement.slideUp(500);
-        gameFinish();
     });
 });
 
@@ -187,15 +187,12 @@ connection.on("NewGameStartCallerHandle", function (playerId) {
 
 // method that is called if result of the starting new game is unsuccessful
 connection.on("NewGameFailureHandle", function (playerId, message) {
+    enableNewGameButton(playerId);
     if (typeof message !== "undefined") {
         $("#failure-alert").html(message);
         $("#failure-alert").fadeTo(2000, 500).slideUp(500, function () {
             $("#failure-alert").slideUp(500);
-            enableNewGameButton(playerId);
         });
-    }
-    else {
-        enableNewGameButton(playerId);
     }
 });
 
@@ -300,9 +297,9 @@ connection.on("GameEndHandle", function (result) {
         alertElement.html("Game has ended in a draw. Try again later.");
     }
 
+    gameFinish();
     alertElement.fadeTo(2000, 500).slideUp(500, function () {
         alertElement.slideUp(500);
-        gameFinish();
     });
 });
 
