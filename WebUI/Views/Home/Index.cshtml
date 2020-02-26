@@ -57,7 +57,7 @@
         <td colspan="2" class="hidden-row">
             <div class="accordian-body collapse player-games" id="player_${playerId}">
                 <p class="no-games-message">There were no previous games between you and this player.</p>
-                <table class="table table-borderless games-table display-none">
+                <table class="table table-borderless games-table display-none" pending-game-id="">
                     <tbody></tbody>
                 </table>
             </div>
@@ -68,9 +68,9 @@
 <script type="text/template" data-template="game-row">
     <tr>
         <td>${id}</td>
-        <td>${startDate}</td>
+        <td class="game-date">${startDate}</td>
         <td><span class="badge ${badgeClass}">${result}</span></td>
-        <td class="text-right" game-id="${gameId}">${actionHtml}</td>
+        <td class="text-right game-continue" game-id="${gameId}">${actionHtml}</td>
     </tr>
 </script>
 
@@ -81,8 +81,8 @@
                 <div class="modal-header">
                     <h5 class="modal-title" id="gameRequestModalLabel">Game request</h5>
                 </div>
-                <div class="modal-body">Player ${playerName} has just challenged you to play Tic-Tac-Toe game. Will you accept this challenge?</div>
-                <div class="modal-footer" player-id="${playerId}">
+                <div class="modal-body"></div>
+                <div class="modal-footer" player-id="${playerId}" game-id="${gameId}">
                     <button type="button" class="btn btn-outline-light player-declineGame-btn">No</button>
                     <button type="button" class="btn btn-outline-success player-acceptGame-btn">Yes</button>
                 </div>

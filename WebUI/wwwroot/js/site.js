@@ -28,57 +28,7 @@ connection.on("PlayerConnectHandle", function (players) {
 
 // method that is called on any new connection to connect to the game
 connection.on("PlayerInGameConnectHandle", function (opponent) {
-    // set necessary opponent data
-    var boardElement = $(".boardContainer");
-    if (opponent.gameId !== 0) {
-        boardElement.attr("game-id", opponent.gameId);
-    }
-    
-    boardElement.attr("is-opponent-cross-player", opponent.isCrossPlayer);
-    boardElement.attr("opponent-id", opponent.id);
-
-    // get game moves
-    $.get("/api/games/" + opponent.gameId)
-        .done(function (data) {
-        for (var i = 0; i < data.crossPlayerTiles.length; ++i) {
-            var cellElement = $("#pos-" + data.crossPlayerTiles[i].tile.x + "-" + data.crossPlayerTiles[i].tile.y);
-            cellElement.addClass("filled");
-            cellElement.text("X");
-        }
-
-        for (var j = 0; j < data.noughtPlayerTiles.length; ++j) {
-            var cellElement = $("#pos-" + data.noughtPlayerTiles[j].tile.x + "-" + data.noughtPlayerTiles[j].tile.y);
-            cellElement.addClass("filled");
-            cellElement.text("O");
-        }
-
-        if ((i === j && opponent.isCrossPlayer) || (i !== j && !opponent.isCrossPlayer)) {
-            // it's opponent turn
-            $(".wait-turn-message").each(function (index) {
-                $(this).removeClass("display-none");
-            });
-        }
-        else {
-            // it's your turn
-
-            $(".your-turn-message").removeClass("display-none");
-            $(".board-table").removeClass("disabled");
-        }
-
-        var infoMessage;
-        if (opponent.isCrossPlayer) {
-            infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
-            
-        }
-        else {
-            infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
-        }
-
-        $(".players-table").addClass("disabled");
-        $(".game-info-message").html(infoMessage).removeClass("display-none");
-    }).fail(function () {
-        alert("Your request has failed. Please contact support.");
-    });
+    connectToExistingGame(opponent);
 });
 
 // method that is called on the first player's connection being established to inform other players
@@ -118,54 +68,62 @@ connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
 
     // get games between two players
     $.get("/api/players/" + playerId).done(function (data) {
-            var games = data["games"];
-            if (games.length) {
-                // there are at least one game
-                gamesRowElement.find(".no-games-message").hide();
-                var gameRowTemplate = getTemplate("game-row");
-                for (var i = 0; i < games.length; ++i) {
-                    var game = games[i];
-                    var badgeClass = "";
-                    var actionHtml = "&nbsp;";
-                    // set different colors and actions depending on game results
-                    switch (game.result) {
-                        case "Active":
-                            badgeClass = "badge-info";
-                            actionHtml = "<button class='btn btn-outline-success continue-game-btn' type='button'>Continue</button>";
-                            break;
-                        case "Loss":
-                            badgeClass = "badge-danger";
-                            actionHtml = "&nbsp;";
-                            break;
-                        case "Win":
-                            badgeClass = "badge-success";
-                            actionHtml = "&nbsp;";
-                            break;
-                        case "Draw":
-                            badgeClass = "badge-warning";
-                            actionHtml = "&nbsp;";
-                            break;
-                    }
-
-                    var items = [{
-                        id: i + 1,
-                        startDate: game.startDate,
-                        badgeClass: badgeClass,
-                        result: game.result,
-                        gameId: game.id,
-                        actionHtml: actionHtml
-                    }];
-                    var appendElement = gamesRowElement.find(".games-table > tbody:last-child");
-                    processTemplate(items, gameRowTemplate, appendElement);
-                    gamesTableElement.show();
+        var games = data["games"];
+        if (games.length) {
+            // there are at least one game
+            gamesRowElement.find(".no-games-message").hide();
+            var gameRowTemplate = getTemplate("game-row");
+            for (var i = 0; i < games.length; ++i) {
+                var game = games[i];
+                var badgeClass = "";
+                var actionHtml = "&nbsp;";
+                // set different colors and actions depending on game results
+                switch (game.result) {
+                    case "Active":
+                        badgeClass = "badge-info";
+                        actionHtml = "<button class='btn btn-outline-success continue-game-btn' type='button'>Continue</button>";
+                        break;
+                    case "Loss":
+                        badgeClass = "badge-danger";
+                        actionHtml = "&nbsp;";
+                        break;
+                    case "Win":
+                        badgeClass = "badge-success";
+                        actionHtml = "&nbsp;";
+                        break;
+                    case "Draw":
+                        badgeClass = "badge-warning";
+                        actionHtml = "&nbsp;";
+                        break;
                 }
+
+                var items = [{
+                    id: i + 1,
+                    startDate: game.startDate,
+                    badgeClass: badgeClass,
+                    result: game.result,
+                    gameId: game.id,
+                    actionHtml: actionHtml
+                }];
+                var appendElement = gamesRowElement.find(".games-table > tbody:last-child");
+                processTemplate(items, gameRowTemplate, appendElement);
+                gamesTableElement.show();
             }
 
-            gamesTableElement.addClass("initialized");
-            gamesRowElement.find("div").collapse("show");
-        }).fail(function () {
-            alert("Your request has failed. Please contact support.");
-        });
+            // check if one gfme should be marked as pending
+            var pendingGameId = gamesTableElement.attr("pending-game-id");
+            if (pendingGameId) {
+                var buttonElement = gamesRowElement.find(".game-continue[game-id='" + pendingGameId + "']").find(".continue-game-btn");
+                buttonElement.html("<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Waiting for player...");
+                gamesTableElement.attr("pending-game-id", "");
+            }
+        }
+
+        gamesTableElement.addClass("initialized");
+        gamesRowElement.find("div").collapse("show");
+    }).fail(function () {
+        alert("Your request has failed. Please contact support.");
+    });
 });
 
 // method that is called after player opens already loaded game history in order to sinc other connections of the same user
@@ -179,15 +137,30 @@ connection.on("PlayerGamesCloseHandle", function (playerId) {
 });
 
 // method that is called when player tries to start new game in order to sinc other connections of the same user
-connection.on("NewGameStartCallerHandle", function (playerId) {
-    var startButtonElement = $("tr[player-id='" + playerId + "']").find(".player-play-btn");
+connection.on("NewGameStartCallerHandle", function (playerId, gameId) {
+    if (gameId) {
+        var buttonElement = $("tr[player-id='" + playerId + "']").next().find(".game-continue[game-id='" + gameId + "']").find(".continue-game-btn");
+        if (buttonElement.length) {
+            // regular case, game table is loaded
+            buttonElement.html("<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Waiting for player...");
+        }
+        else {
+            // new connection is opened when player is waiting for response
+            $("tr[player-id='" + playerId + "']").next().find(".games-table").attr("pending-game-id", gameId);
+        }
+    }
+    else {
+        var buttonElement = $("tr[player-id='" + playerId + "']").find(".player-play-btn");
+        buttonElement.html("<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Waiting for player...");
+    }
+    
     $(".players-table").addClass("disabled");
-    startButtonElement.html("<span class='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span> Waiting for player...");
+    
 });
 
 // method that is called if result of the starting new game is unsuccessful
 connection.on("NewGameFailureHandle", function (playerId, message) {
-    enableNewGameButton(playerId);
+    enableGameButtons(playerId);
     if (typeof message !== "undefined") {
         $("#failure-alert").html(message);
         $("#failure-alert").fadeTo(2000, 500).slideUp(500, function () {
@@ -197,15 +170,25 @@ connection.on("NewGameFailureHandle", function (playerId, message) {
 });
 
 // method that is called when one player has requested to play with another
-connection.on("NewGameStartReceiverHandle", function (playerId, playerName) {
+connection.on("NewGameStartReceiverHandle", function (playerId, playerName, gameId, gameDate) {
     // show modal to player in order to ask if he wants to play
     if (!$("#gameRequestModal_" + playerId).length) {
         var gameRequestModalTemplate = getTemplate("gameRequestModal");
         var items = [{
-            playerName: playerName,
-            playerId: playerId
+            playerId: playerId,
+            gameId: gameId
         }];
         processTemplate(items, gameRequestModalTemplate, $("#modals"));
+    }
+
+    // show different messages for new game and existing one
+    if (gameId) {
+        $("#gameRequestModal_" + playerId).find(".modal-footer").attr("game-id", gameId);
+        $("#gameRequestModal_" + playerId).find(".modal-body").html("Player " + playerName + " has just challenged you to continue previously started on " + gameDate + " Tic-Tac-Toe game. Will you accept this challenge?");
+    }
+    else {
+        $("#gameRequestModal_" + playerId).find(".modal-footer").attr("game-id", "");
+        $("#gameRequestModal_" + playerId).find(".modal-body").html("Player " + playerName + " has just challenged you to play Tic-Tac-Toe game. Will you accept this challenge?");
     }
     
     $("#gameRequestModal_" + playerId).modal("show")
@@ -217,29 +200,32 @@ connection.on("NewGameDeclineHandle", function (playerId) {
 });
 
 // method that is called to handle UI changes for caller after new game is accepted
-connection.on("NewGameAcceptCallerHandle", function (player) {
+connection.on("NewGameAcceptCallerHandle", function (opponent) {
     $(".modal").each(function (index) {
         $(this).modal("hide");
     });
-    removePlayer(player.id);
-    checkIfAnyPlayers();
-    $(".player-games").each(function (index) {
-        $(this).collapse("hide");
-    });
-    $(".players-table").addClass("disabled");
-    processTurnInfo(player);
+    // check if we want to continue existing game or create new
+    if (opponent.gameId) {
+        connectToExistingGame(opponent);
+    }
+    else {
+        processTurnInfo(opponent);
+    }
+
+    prepareGameElements(opponent);
 });
 
 // method that is called to handle UI changes for receiver after new game is accepted
-connection.on("NewGameAcceptReceiverHandle", function (player) {
-    $("tr[player-id='" + player.id + "']").find(".player-play-btn").html("Play");
-    removePlayer(player.id);
-    checkIfAnyPlayers();
-    $(".player-games").each(function (index) {
-        $(this).collapse("hide");
-    });
-    $(".players-table").addClass("disabled");
-    processTurnInfo(player);
+connection.on("NewGameAcceptReceiverHandle", function (opponent) {
+    // check if we want to continue existing game or create new
+    if (opponent.gameId) {
+        connectToExistingGame(opponent);
+    }
+    else {
+        processTurnInfo(opponent);
+    }
+
+    prepareGameElements(opponent);
 });
 
 // method that is called when player starts the game to inform other players
@@ -332,10 +318,23 @@ $(document).on("click", ".player-history-btn", function () {
 // event handler on play new game button
 $(document).on("click", ".player-play-btn", function () {
     var playerId = $(this).closest("tr").attr("player-id");
-    connection.invoke("OnNewGameStartCaller", playerId).catch(err => {
+    connection.invoke("OnNewGameStartCaller", playerId, "").catch(err => {
         alert("Your request has failed. Please contact support.");
     });
-    connection.invoke("OnNewGameStartReceiver", playerId).catch(err => {
+    connection.invoke("OnNewGameStartReceiver", playerId, "", "").catch(err => {
+        alert("Your request has failed. Please contact support.");
+    });
+});
+
+// event handler on continue non-finished game button
+$(document).on("click", ".continue-game-btn", function () {
+    var playerId = $(this).closest(".player-games").closest("tr").prev().attr("player-id");
+    var gameId = $(this).closest("td").attr("game-id");
+    var gameDate = $(this).closest("tr").find(".game-date").text();
+    connection.invoke("OnNewGameStartCaller", playerId, gameId).catch(err => {
+        alert("Your request has failed. Please contact support.");
+    });
+    connection.invoke("OnNewGameStartReceiver", playerId, gameId, gameDate).catch(err => {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -351,7 +350,8 @@ $(document).on("click", ".player-declineGame-btn", function () {
 // event handler on game accepted button
 $(document).on("click", ".player-acceptGame-btn", function () {
     var playerId = $(this).closest("div").attr("player-id");
-    connection.invoke("OnNewGameAccept", playerId).catch(err => {
+    var gameId = parseInt($(this).closest("div").attr("game-id"), 10);
+    connection.invoke("OnNewGameAccept", playerId, gameId).catch(err => {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -438,7 +438,7 @@ function appendPlayerRow(items, playerRowTemplate) {
 }
 
 // re-enable new game button after callback
-function enableNewGameButton(playerId) {
+function enableGameButtons(playerId) {
     // id playerId is not provided - set default value for all buttons
     if (typeof playerId === "undefined") {
         $(".player-play-btn").each(function (index) {
@@ -448,6 +448,10 @@ function enableNewGameButton(playerId) {
     else {
         $("tr[player-id='" + playerId + "']").find(".player-play-btn").html("Play");
     }
+
+    $(".continue-game-btn").each(function (index) {
+        $(this).html("Continue");
+    });
 
     $(".players-table").removeClass("disabled");
 }
@@ -550,4 +554,70 @@ function gameFinish() {
     });
     $(".board-table").addClass("disabled");
     $(".players-table").removeClass("disabled");
+}
+
+// prepare UI to display game data
+function prepareGameElements(opponent) {
+    removePlayer(opponent.id);
+    checkIfAnyPlayers();
+    $(".player-games").each(function (index) {
+        $(this).collapse("hide");
+    });
+    $(".players-table").addClass("disabled");
+}
+
+// connect to existing game (for continue game and addinf new connection while others in the game)
+function connectToExistingGame(opponent) {
+    // set necessary opponent data
+    var boardElement = $(".boardContainer");
+    if (opponent.gameId !== 0) {
+        boardElement.attr("game-id", opponent.gameId);
+    }
+
+    boardElement.attr("opponent-id", opponent.id);
+
+    // get game moves
+    $.get("/api/games/" + opponent.gameId)
+        .done(function (data) {
+            var isOpponentCrossPlayer = data.isOpponentCrossPlayer;
+            boardElement.attr("is-opponent-cross-player", isOpponentCrossPlayer);
+            for (var i = 0; i < data.crossPlayerTiles.length; ++i) {
+                var cellElement = $("#pos-" + data.crossPlayerTiles[i].tile.x + "-" + data.crossPlayerTiles[i].tile.y);
+                cellElement.addClass("filled");
+                cellElement.text("X");
+            }
+
+            for (var j = 0; j < data.noughtPlayerTiles.length; ++j) {
+                var cellElement = $("#pos-" + data.noughtPlayerTiles[j].tile.x + "-" + data.noughtPlayerTiles[j].tile.y);
+                cellElement.addClass("filled");
+                cellElement.text("O");
+            }
+
+            if ((i === j && isOpponentCrossPlayer) || (i !== j && !isOpponentCrossPlayer)) {
+                // it's opponent turn
+                $(".wait-turn-message").each(function (index) {
+                    $(this).removeClass("display-none");
+                });
+            }
+            else {
+                // it's your turn
+
+                $(".your-turn-message").removeClass("display-none");
+                $(".board-table").removeClass("disabled");
+            }
+
+            var infoMessage;
+            if (isOpponentCrossPlayer) {
+                infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
+
+            }
+            else {
+                infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
+            }
+
+            $(".players-table").addClass("disabled");
+            $(".game-info-message").html(infoMessage).removeClass("display-none");
+        }).fail(function () {
+            alert("Your request has failed. Please contact support.");
+        });
 }

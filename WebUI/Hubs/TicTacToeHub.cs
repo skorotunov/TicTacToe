@@ -34,6 +34,7 @@ namespace TicTacToe.WebUI.Hubs
         public override async Task OnConnectedAsync()
         {
             var tasks = new List<Task>();
+            var actionTasks = new List<Task>();
             string playerId = currentUserService.UserId;
             string playerName = currentUserService.UserName;
             string connectionId = Context.ConnectionId;
@@ -82,17 +83,23 @@ namespace TicTacToe.WebUI.Hubs
                         foreach (SynchronizationAction action in playerNotInTheGame.Actions)
                         {
                             // due to the restrictions of the ClientProxyExtensions signature and without desire to use reflection
-                            // we need to store parameters in the array and pass as separete items, not as a collection
+                            // we need to store parameters in the array and pass as separete items, not as a collection (up to 4 possible parameters)
                             switch (action.Parameters.Count())
                             {
                                 case 0:
-                                    tasks.Add(Clients.Caller.SendAsync(action.Name));
+                                    actionTasks.Add(Clients.Caller.SendAsync(action.Name));
                                     break;
                                 case 1:
-                                    tasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0]));
+                                    actionTasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0]));
                                     break;
                                 case 2:
-                                    tasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0], action.Parameters[1]));
+                                    actionTasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0], action.Parameters[1]));
+                                    break;
+                                case 3:
+                                    actionTasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0], action.Parameters[1], action.Parameters[2]));
+                                    break;
+                                case 4:
+                                    actionTasks.Add(Clients.Caller.SendAsync(action.Name, action.Parameters[0], action.Parameters[1], action.Parameters[2], action.Parameters[3]));
                                     break;
                             }
                         }
@@ -101,6 +108,13 @@ namespace TicTacToe.WebUI.Hubs
             }
 
             await Task.WhenAll(tasks);
+
+            // actions should be executed in specific order so WhenAll is not suitable
+            foreach (Task actionTask in actionTasks)
+            {
+                await actionTask;
+            }
+
             await base.OnConnectedAsync();
         }
 
@@ -201,20 +215,20 @@ namespace TicTacToe.WebUI.Hubs
             }
         }
 
-        public async Task OnNewGameStartCaller(string playerId)
+        public async Task OnNewGameStartCaller(string playerId, string gameId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
                 lock (LockObject)
                 {
-                    caller.Actions.Add(new SynchronizationAction("NewGameStartCallerHandle", new string[] { playerId }));
+                    caller.Actions.Add(new SynchronizationAction("NewGameStartCallerHandle", new string[] { playerId, gameId }));
                 }
 
-                await Clients.User(currentUserService.UserId).SendAsync("NewGameStartCallerHandle", playerId);
+                await Clients.User(currentUserService.UserId).SendAsync("NewGameStartCallerHandle", playerId, gameId);
             }
         }
 
-        public async Task OnNewGameStartReceiver(string playerId)
+        public async Task OnNewGameStartReceiver(string playerId, string gameId, string gameDate)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
              && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
@@ -234,8 +248,8 @@ namespace TicTacToe.WebUI.Hubs
                         }
                         else
                         {
-                            receiver.Actions.Add(new SynchronizationAction("NewGameStartReceiverHandle", new string[] { caller.Id, caller.Name }));
-                            task = Clients.User(receiver.Id).SendAsync("NewGameStartReceiverHandle", caller.Id, caller.Name);
+                            receiver.Actions.Add(new SynchronizationAction("NewGameStartReceiverHandle", new string[] { caller.Id, caller.Name, gameId, gameDate }));
+                            task = Clients.User(receiver.Id).SendAsync("NewGameStartReceiverHandle", caller.Id, caller.Name, gameId, gameDate);
                         }
                     }
 
@@ -295,8 +309,9 @@ namespace TicTacToe.WebUI.Hubs
         /// Also all other players that are waiting for this player should be informed.
         /// </summary>
         /// <param name="playerId">Id of the player who has ofered game. In the terms of current method - receiver.</param>
+        /// /// <param name="playerId">Id of the game to continue. If it is new game - 0.</param>
         /// <returns></returns>
-        public async Task OnNewGameAccept(string playerId)
+        public async Task OnNewGameAccept(string playerId, int gameId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
              && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
@@ -309,7 +324,7 @@ namespace TicTacToe.WebUI.Hubs
                 {
                     // process caller
                     // get all playerIds of the other players that are waiting for the response of the new game with caller.
-                    // There are should not be many players waiting for one specific player. Therefore, regular foreach should be more efficient than Parallel
+                    // There should not be many players waiting for one specific player. Therefore, regular foreach should be more efficient than Parallel
                     foreach (SynchronizationAction action in caller.Actions.Where(x => x.Name == "NewGameStartReceiverHandle" && x.Parameters.First() != receiver.Id))
                     {
                         if (PlayersCollection.AvailablePlayers.TryGetValue(action.Parameters.First(), out Player waitingPlayer))
@@ -341,22 +356,26 @@ namespace TicTacToe.WebUI.Hubs
                     caller.GroupName = guidString;
                     receiver.GroupName = guidString;
 
-                    // coin Toss
-                    if (random.Next(0, 2) == 0)
+                    if (gameId > 0)
                     {
-                        // caller will make the first move and will play with cross
-                        caller.IsWaitingForMove = false;
-                        caller.IsCrossPlayer = true;
-                        receiver.IsWaitingForMove = true;
-                        receiver.IsCrossPlayer = false;
+                        caller.GameId = gameId;
+                        receiver.GameId = gameId;
                     }
                     else
                     {
-                        // receiver make the first move and will play with cross
-                        caller.IsWaitingForMove = true;
-                        caller.IsCrossPlayer = false;
-                        receiver.IsWaitingForMove = false;
-                        receiver.IsCrossPlayer = true;
+                        // coin Toss
+                        if (random.Next(0, 2) == 0)
+                        {
+                            // caller will make the first move and will play with cross
+                            caller.IsCrossPlayer = true;
+                            receiver.IsCrossPlayer = false;
+                        }
+                        else
+                        {
+                            // receiver make the first move and will play with cross
+                            caller.IsCrossPlayer = false;
+                            receiver.IsCrossPlayer = true;
+                        }
                     }
 
                     foreach (string callerConnectionId in caller.ConnectionIds)
@@ -446,10 +465,8 @@ namespace TicTacToe.WebUI.Hubs
 
                         // cleanup game data
                         caller.GroupName = null;
-                        caller.IsWaitingForMove = false;
                         caller.IsCrossPlayer = false;
                         opponent.GroupName = null;
-                        opponent.IsWaitingForMove = false;
                         opponent.IsCrossPlayer = false;
 
                         // inform other players that game participants are now available for the game
