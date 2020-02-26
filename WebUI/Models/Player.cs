@@ -18,6 +18,8 @@ namespace TicTacToe.WebUI.Models
 
         public string GroupName { get; set; }
 
+        public int GameId { get; set; }
+
         public bool IsWaitingForMove { get; set; }
 
         public bool IsCrossPlayer { get; set; }

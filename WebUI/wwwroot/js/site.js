@@ -26,6 +26,61 @@ connection.on("PlayerConnectHandle", function (players) {
     checkIfAnyPlayers();
 });
 
+// method that is called on any new connection to connect to the game
+connection.on("PlayerInGameConnectHandle", function (opponent) {
+    // set necessary opponent data
+    var boardElement = $(".boardContainer");
+    if (opponent.gameId !== 0) {
+        boardElement.attr("game-id", opponent.gameId);
+    }
+    
+    boardElement.attr("is-opponent-cross-player", opponent.isCrossPlayer);
+    boardElement.attr("opponent-id", opponent.id);
+
+    // get game moves
+    $.get("/api/games/" + opponent.gameId)
+        .done(function (data) {
+        for (var i = 0; i < data.crossPlayerTiles.length; ++i) {
+            var cellElement = $("#pos-" + data.crossPlayerTiles[i].tile.x + "-" + data.crossPlayerTiles[i].tile.y);
+            cellElement.addClass("filled");
+            cellElement.text("X");
+        }
+
+        for (var j = 0; j < data.noughtPlayerTiles.length; ++j) {
+            var cellElement = $("#pos-" + data.noughtPlayerTiles[j].tile.x + "-" + data.noughtPlayerTiles[j].tile.y);
+            cellElement.addClass("filled");
+            cellElement.text("O");
+        }
+
+        if ((i === j && opponent.isCrossPlayer) || (i !== j && !opponent.isCrossPlayer)) {
+            // it's opponent turn
+            $(".wait-turn-message").each(function (index) {
+                $(this).removeClass("display-none");
+            });
+        }
+        else {
+            // it's your turn
+
+            $(".your-turn-message").removeClass("display-none");
+            $(".board-table").removeClass("disabled");
+        }
+
+        var infoMessage;
+        if (opponent.isCrossPlayer) {
+            infoMessage = "Your are playing as <strong><i>O</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
+            
+        }
+        else {
+            infoMessage = "Your are playing as <strong><i>X</i></strong> against <strong><i>" + opponent.name + "</i></strong>.";
+        }
+
+        $(".players-table").addClass("disabled");
+        $(".game-info-message").html(infoMessage).removeClass("display-none");
+    }).fail(function () {
+        alert("Your request has failed. Please contact support.");
+    });
+});
+
 // method that is called on the first player's connection being established to inform other players
 connection.on("PlayerFirstTimeConnectHandle", function (playerId, playerName) {
     // at least one player is active now
@@ -62,8 +117,7 @@ connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
     var gamesTableElement = gamesRowElement.find(".games-table");
 
     // get games between two players
-    $.get("/api/players/" + playerId
-        ).done(function (data) {
+    $.get("/api/players/" + playerId).done(function (data) {
             var games = data["games"];
             if (games.length) {
                 // there are at least one game
@@ -172,6 +226,9 @@ connection.on("NewGameAcceptCallerHandle", function (player) {
     });
     removePlayer(player.id);
     checkIfAnyPlayers();
+    $(".player-games").each(function (index) {
+        $(this).collapse("hide");
+    });
     $(".players-table").addClass("disabled");
     processTurnInfo(player);
 });
@@ -181,6 +238,9 @@ connection.on("NewGameAcceptReceiverHandle", function (player) {
     $("tr[player-id='" + player.id + "']").find(".player-play-btn").html("Play");
     removePlayer(player.id);
     checkIfAnyPlayers();
+    $(".player-games").each(function (index) {
+        $(this).collapse("hide");
+    });
     $(".players-table").addClass("disabled");
     processTurnInfo(player);
 });
@@ -309,6 +369,7 @@ $(document).on("click", ".board-cell:not(.filled)", function () {
     var yCell = parseInt(partsArray[2], 10);
     
     var isOpponentCrossPlayer = $.parseJSON(boardElement.attr("is-opponent-cross-player").toLowerCase());
+    var opponentId = boardElement.attr("opponent-id");
     var url;
     if (isOpponentCrossPlayer) {
         url = "/api/noughtplayergametiles";
@@ -324,24 +385,24 @@ $(document).on("click", ".board-cell:not(.filled)", function () {
             type: "POST",
             url: "/api/games",
             data: JSON.stringify({
-                opponentId: boardElement.attr("opponent-id"),
+                opponentId: opponentId,
                 isOpponentCrossPlayer: isOpponentCrossPlayer
             }),
             contentType: "application/json; charset=utf-8",
             dataType: "json"
         }).done(function (data) {
             boardElement.attr("game-id", data);
-            connection.invoke("OnNewGameCreate", data).catch(err => {
+            connection.invoke("OnNewGameCreate", data, opponentId).catch(err => {
                 alert("Your request has failed. Please contact support.");
             });
 
-            insertMove(cellElement, data, xCell, yCell, isOpponentCrossPlayer, url);
+            insertMove(cellElement, data, xCell, yCell, isOpponentCrossPlayer, opponentId, url);
         }).fail(function () {
             alert("Your request has failed. Please contact support.");
         });
     }
     else {
-        insertMove(cellElement, parseInt(gameId, 10), xCell, yCell, isOpponentCrossPlayer, url);
+        insertMove(cellElement, parseInt(gameId, 10), xCell, yCell, isOpponentCrossPlayer, opponentId, url);
     }
 });
 
@@ -445,7 +506,7 @@ function fillCell(cellElement, isOpponentCrossPlayer) {
 }
 
 // insert player's move to the databse
-function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, url) {
+function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, opponentId, url) {
     // post method to create new move in the database
     $.ajax({
         type: "POST",
@@ -466,7 +527,7 @@ function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, ur
             $(this).removeClass("display-none");
         });
 
-        connection.invoke("OnTurnComplete", gameId, xCell, yCell).catch(err => {
+        connection.invoke("OnTurnComplete", gameId, opponentId, xCell, yCell).catch(err => {
             alert("Your request has failed. Please contact support.");
         });
     }).fail(function () {
@@ -476,6 +537,11 @@ function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, ur
 
 // clean up fields after game was finished
 function gameFinish() {
+    var boardElement = $(".boardContainer");
+    boardElement.attr("game-id", "");
+    boardElement.attr("is-opponent-cross-player", "");
+    boardElement.attr("opponent-id", "");
+
     $(".game-info-message").addClass("display-none");
     $(".your-turn-message").addClass("display-none");
     $(".wait-turn-message").each(function (index) {

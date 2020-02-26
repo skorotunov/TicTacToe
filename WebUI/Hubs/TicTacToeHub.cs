@@ -45,9 +45,18 @@ namespace TicTacToe.WebUI.Hubs
                 {
                     playerInTheGame.ConnectionIds.Add(connectionId);
                     tasks.Add(Groups.AddToGroupAsync(connectionId, playerInTheGame.GroupName));
-                }
 
-                // TODO: task to get latest board for new connection
+                    // always broadcast this to show players list for the new connection
+                    var availablePlayers = PlayersCollection.AvailablePlayers.Select(x => x.Value).ToList();
+                    tasks.Add(Clients.Caller.SendAsync("PlayerConnectHandle", availablePlayers));
+
+                    // find opponent user
+                    Player opponent = GetOpponent(playerInTheGame.Id, playerInTheGame.GroupName);
+                    if (opponent != null)
+                    {
+                        tasks.Add(Clients.Caller.SendAsync("PlayerInGameConnectHandle", opponent));
+                    }
+                }
             }
             else
             {
@@ -116,10 +125,10 @@ namespace TicTacToe.WebUI.Hubs
                         tasks.Add(Clients.Group(playerInTheGame.GroupName).SendAsync("PlayerInGameDisconnectHandle"));
 
                         // find opponent user
-                        Player opponent = PlayersCollection.InTheGamePlayers.FirstOrDefault(x => x.Key != playerInTheGame.Id && x.Value.GroupName == playerInTheGame.GroupName).Value;
+                        Player opponent = GetOpponent(playerInTheGame.Id, playerInTheGame.GroupName);
                         if (opponent != null)
                         {
-                            // infor other players that now opponent is available
+                            // informe other players that now opponent is available
                             tasks.Add(Clients.AllExcept(opponent.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", opponent.Id, opponent.Name));
 
                             // move opponent to available players list
@@ -207,7 +216,8 @@ namespace TicTacToe.WebUI.Hubs
 
         public async Task OnNewGameStartReceiver(string playerId)
         {
-            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller) && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
+            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
+             && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
             {
                 // in order to prevent setting UI in disabled state we need to specifically process exception case
                 try
@@ -253,7 +263,8 @@ namespace TicTacToe.WebUI.Hubs
         /// <returns></returns>
         public async Task OnNewGameDecline(string playerId)
         {
-            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller) && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
+            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
+             && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
             {
                 var tasks = new List<Task>();
 
@@ -267,13 +278,13 @@ namespace TicTacToe.WebUI.Hubs
                     // add single NewGameFailureHandle method at the end of the actions list. It will enable UI for new user's connections
                     receiver.Actions.RemoveAll(x => x.Name == "NewGameFailureHandle");
                     receiver.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
+
+                    // call method that will close open modal
+                    tasks.Add(Clients.User(caller.Id).SendAsync("NewGameDeclineHandle", receiver.Id));
+
+                    // call specific NewGameFailureHandle method to show alert for existing user's connections
+                    tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameFailureHandle", caller.Id, $"{caller.Name} does not want to play at the moment. Please try later."));
                 }
-
-                // call method that will close open modal
-                tasks.Add(Clients.User(caller.Id).SendAsync("NewGameDeclineHandle", receiver.Id));
-
-                // call specific NewGameFailureHandle method to show alert for existing user's connections
-                tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameFailureHandle", caller.Id, $"{caller.Name} does not want to play at the moment. Please try later."));
 
                 await Task.WhenAll(tasks);
             }
@@ -287,7 +298,8 @@ namespace TicTacToe.WebUI.Hubs
         /// <returns></returns>
         public async Task OnNewGameAccept(string playerId)
         {
-            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller) && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
+            if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
+             && PlayersCollection.AvailablePlayers.TryGetValue(playerId, out Player receiver))
             {
                 var tasks = new List<Task>();
 
@@ -311,24 +323,17 @@ namespace TicTacToe.WebUI.Hubs
                         }
                     }
 
-                    // remove all NewGameStartReceiverHandle method instances. They intended for opening modal windows
-                    caller.Actions.RemoveAll(x => x.Name == "NewGameStartReceiverHandle");
-
-                    // process receiver
-                    // try to add action for the receiver
-                    // add single NewGameFailureHandle method at the end of the actions list. It will enable UI for new user's connections
-                    receiver.Actions.RemoveAll(x => x.Name == "NewGameFailureHandle");
-                    receiver.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
-
                     // move to the game collection
                     if (PlayersCollection.AvailablePlayers.TryRemove(caller.Id, out Player _))
                     {
                         PlayersCollection.InTheGamePlayers.TryAdd(caller.Id, caller);
+                        caller.Actions = new List<SynchronizationAction>();
                     }
 
                     if (PlayersCollection.AvailablePlayers.TryRemove(receiver.Id, out Player _))
                     {
                         PlayersCollection.InTheGamePlayers.TryAdd(receiver.Id, receiver);
+                        receiver.Actions = new List<SynchronizationAction>();
                     }
 
                     // create game group
@@ -370,11 +375,11 @@ namespace TicTacToe.WebUI.Hubs
                         tasks.Add(Clients.User(availablePlayer.Key).SendAsync("NewGameAcceptOthersHandle", receiver.Id));
                         tasks.Add(Clients.User(availablePlayer.Key).SendAsync("NewGameAcceptOthersHandle", caller.Id));
                     }
-                }
 
-                // add methods that will handler start of the new game
-                tasks.Add(Clients.User(caller.Id).SendAsync("NewGameAcceptCallerHandle", receiver));
-                tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameAcceptReceiverHandle", caller));
+                    // add methods that will handler start of the new game
+                    tasks.Add(Clients.User(caller.Id).SendAsync("NewGameAcceptCallerHandle", receiver));
+                    tasks.Add(Clients.User(receiver.Id).SendAsync("NewGameAcceptReceiverHandle", caller));
+                }
 
                 await Task.WhenAll(tasks);
             }
@@ -385,10 +390,18 @@ namespace TicTacToe.WebUI.Hubs
         /// </summary>
         /// <param name="gameId">Id of the created game</param>
         /// <returns></returns>
-        public async Task OnNewGameCreate(int gameId)
+        public async Task OnNewGameCreate(int gameId, string opponentId)
         {
-            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller))
+            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller)
+             && PlayersCollection.InTheGamePlayers.TryGetValue(opponentId, out Player opponent))
             {
+                lock (LockObject)
+                {
+                    // set gameId for both players
+                    caller.GameId = gameId;
+                    opponent.GameId = gameId;
+                }
+
                 await Clients.OthersInGroup(caller.GroupName).SendAsync("NewGameCreateHandle", gameId);
             }
         }
@@ -399,57 +412,65 @@ namespace TicTacToe.WebUI.Hubs
         /// <param name="x">X coordinate of the cell</param>
         /// <param name="y">Y coordinate of the cell</param>
         /// <returns></returns>
-        public async Task OnTurnComplete(int gameId, byte x, byte y)
+        public async Task OnTurnComplete(int gameId, string opponentId, byte x, byte y)
         {
             var tasks = new List<Task>();
 
             // register turn of the game and check win conditions
             GameResult result = await mediator.Send(new CheckAndUpdateGameWinConditionsCommand(gameId));
-            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller))
+
+            if (PlayersCollection.InTheGamePlayers.TryGetValue(currentUserService.UserId, out Player caller)
+             && PlayersCollection.InTheGamePlayers.TryGetValue(opponentId, out Player opponent))
             {
                 lock (LockObject)
                 {
-                    // find opponent user
-                    Player receiver = PlayersCollection.InTheGamePlayers.FirstOrDefault(x => x.Key != caller.Id && x.Value.GroupName == caller.GroupName).Value;
-                    if (receiver != null)
+                    // add handle methods for caller and receiver connections
+                    tasks.Add(Clients.GroupExcept(caller.GroupName, caller.ConnectionIds.ToList()).SendAsync("TurnCompleteReceiverHandle", x, y));
+                    tasks.Add(Clients.GroupExcept(opponent.GroupName, opponent.ConnectionIds.ToList()).SendAsync("TurnCompleteCallerHandle", x, y));
+
+                    // check if game has ended
+                    if (result != GameResult.Active)
                     {
-                        // add handle methods for caller and receiver connections
-                        tasks.Add(Clients.GroupExcept(caller.GroupName, caller.ConnectionIds.ToList()).SendAsync("TurnCompleteReceiverHandle", x, y));
-                        tasks.Add(Clients.GroupExcept(receiver.GroupName, receiver.ConnectionIds.ToList()).SendAsync("TurnCompleteCallerHandle", x, y));
+                        tasks.Add(Clients.Group(caller.GroupName).SendAsync("GameEndHandle", result.ToString()));
 
-                        // check if game has ended
-                        if (result != GameResult.Active)
+                        // move to the available collection
+                        if (PlayersCollection.InTheGamePlayers.TryRemove(caller.Id, out Player _))
                         {
-                            tasks.Add(Clients.Group(caller.GroupName).SendAsync("GameEndHandle", result.ToString()));
-
-                            // move to the available collection
-                            if (PlayersCollection.InTheGamePlayers.TryRemove(caller.Id, out Player _))
-                            {
-                                PlayersCollection.AvailablePlayers.TryAdd(caller.Id, caller);
-                            }
-
-                            if (PlayersCollection.InTheGamePlayers.TryRemove(receiver.Id, out Player _))
-                            {
-                                PlayersCollection.AvailablePlayers.TryAdd(receiver.Id, receiver);
-                            }
-
-                            // cleanup game data
-                            caller.GroupName = null;
-                            caller.IsWaitingForMove = false;
-                            caller.IsCrossPlayer = false;
-                            receiver.GroupName = null;
-                            receiver.IsWaitingForMove = false;
-                            receiver.IsCrossPlayer = false;
-
-                            // inform other players that game participants are now available for the game
-                            tasks.Add(Clients.AllExcept(caller.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", caller.Id, caller.Name));
-                            tasks.Add(Clients.AllExcept(receiver.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", receiver.Id, receiver.Name));
+                            PlayersCollection.AvailablePlayers.TryAdd(caller.Id, caller);
                         }
+
+                        if (PlayersCollection.InTheGamePlayers.TryRemove(opponent.Id, out Player _))
+                        {
+                            PlayersCollection.AvailablePlayers.TryAdd(opponent.Id, opponent);
+                        }
+
+                        // cleanup game data
+                        caller.GroupName = null;
+                        caller.IsWaitingForMove = false;
+                        caller.IsCrossPlayer = false;
+                        opponent.GroupName = null;
+                        opponent.IsWaitingForMove = false;
+                        opponent.IsCrossPlayer = false;
+
+                        // inform other players that game participants are now available for the game
+                        tasks.Add(Clients.AllExcept(caller.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", caller.Id, caller.Name));
+                        tasks.Add(Clients.AllExcept(opponent.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", opponent.Id, opponent.Name));
                     }
                 }
 
                 await Task.WhenAll(tasks);
             }
+        }
+
+        /// <summary>
+        /// Get player's opponent entity
+        /// </summary>
+        /// <param name="playerId">player in the game whose opponent needs to be found</param>
+        /// <param name="groupName">name of the players group</param>
+        /// <returns></returns>
+        private Player GetOpponent(string playerId, string groupName)
+        {
+            return PlayersCollection.InTheGamePlayers.FirstOrDefault(x => x.Key != playerId && x.Value.GroupName == groupName).Value;
         }
     }
 }
