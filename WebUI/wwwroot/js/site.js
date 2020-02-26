@@ -308,18 +308,18 @@ $(document).on("click", ".player-history-btn", function () {
     // check if games list was already loaded. If so - no need to load, because games list can be altered only after game complition event
     if (gamesTableElement.hasClass("initialized")) {
         if (gamesRowElement.find("div").hasClass("show")) {
-            connection.invoke("OnPlayerGamesClose", playerId).catch(err => {
+            connection.invoke("OnPlayerGamesClose", playerId).catch(function (err) {
                 alert("Your request has failed. Please contact support.");
             });
         }
         else {
-            connection.invoke("OnPlayerGamesOpen", playerId).catch(err => {
+            connection.invoke("OnPlayerGamesOpen", playerId).catch(function (err) {
                 alert("Your request has failed. Please contact support.");
             });
         }
     }
     else {
-        connection.invoke("OnPlayerGamesFirstTimeOpen", playerId).catch(err => {
+        connection.invoke("OnPlayerGamesFirstTimeOpen", playerId).catch(function (err) {
             alert("Your request has failed. Please contact support.");
         });
     }
@@ -328,10 +328,10 @@ $(document).on("click", ".player-history-btn", function () {
 // event handler on play new game button
 $(document).on("click", ".player-play-btn", function () {
     var playerId = $(this).closest("tr").attr("player-id");
-    connection.invoke("OnNewGameStartCaller", playerId, "").catch(err => {
+    connection.invoke("OnNewGameStartCaller", playerId, "").catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
-    connection.invoke("OnNewGameStartReceiver", playerId, "", "").catch(err => {
+    connection.invoke("OnNewGameStartReceiver", playerId, "", "").catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -341,10 +341,10 @@ $(document).on("click", ".continue-game-btn", function () {
     var playerId = $(this).closest(".player-games").closest("tr").prev().attr("player-id");
     var gameId = $(this).closest("td").attr("game-id");
     var gameDate = $(this).closest("tr").find(".game-date").text();
-    connection.invoke("OnNewGameStartCaller", playerId, gameId).catch(err => {
+    connection.invoke("OnNewGameStartCaller", playerId, gameId).catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
-    connection.invoke("OnNewGameStartReceiver", playerId, gameId, gameDate).catch(err => {
+    connection.invoke("OnNewGameStartReceiver", playerId, gameId, gameDate).catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -352,7 +352,7 @@ $(document).on("click", ".continue-game-btn", function () {
 // event handler on game decline button
 $(document).on("click", ".player-declineGame-btn", function () {
     var playerId = $(this).closest("div").attr("player-id");
-    connection.invoke("OnNewGameDecline", playerId).catch(err => {
+    connection.invoke("OnNewGameDecline", playerId).catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -368,8 +368,8 @@ $(document).on("click", ".player-acceptGame-btn", function () {
     else {
         gameId = 0;
     }
-    
-    connection.invoke("OnNewGameAccept", playerId, gameId).catch(err => {
+
+    connection.invoke("OnNewGameAccept", playerId, gameId).catch(function (err) {
         alert("Your request has failed. Please contact support.");
     });
 });
@@ -407,7 +407,7 @@ $(document).on("click", ".board-cell:not(.filled)", function () {
             dataType: "json"
         }).done(function (data) {
             boardElement.attr("game-id", data);
-            connection.invoke("OnNewGameCreate", data, opponentId).catch(err => {
+            connection.invoke("OnNewGameCreate", data, opponentId).catch(function (err) {
                 alert("Your request has failed. Please contact support.");
             });
 
@@ -546,7 +546,7 @@ function insertMove(cellElement, gameId, xCell, yCell, isOpponentCrossPlayer, op
             $(this).removeClass("display-none");
         });
 
-        connection.invoke("OnTurnComplete", gameId, opponentId, xCell, yCell).catch(err => {
+        connection.invoke("OnTurnComplete", gameId, opponentId, xCell, yCell).catch(function (err) {
             alert("Your request has failed. Please contact support.");
         });
     }).fail(function () {
