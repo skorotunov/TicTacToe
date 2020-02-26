@@ -1,5 +1,8 @@
 ﻿"use strict";
 
+// prevent caching in IE
+$.ajaxSetup({ cache: false });
+
 // signalR hub connection
 var connection = new signalR.HubConnectionBuilder()
     .withUrl("/tictactoe")
@@ -79,7 +82,7 @@ connection.on("PlayerGamesFirstTimeOpenHandle", function (playerId) {
     // get games between two players
     $.get("/api/players/" + playerId).done(function (data) {
         var games = data["games"];
-        if (games.length) {
+        if (games.length) {            
             // there are at least one game
             gamesRowElement.find(".no-games-message").hide();
             var gameRowTemplate = getTemplate("game-row");
@@ -201,7 +204,7 @@ connection.on("NewGameStartReceiverHandle", function (playerId, playerName, game
         $("#gameRequestModal_" + playerId).find(".modal-body").html("Player " + playerName + " has just challenged you to play Tic-Tac-Toe game. Will you accept this challenge?");
     }
     
-    $("#gameRequestModal_" + playerId).modal("show")
+    $("#gameRequestModal_" + playerId).modal("show");
 });
 
 // method that is called on decline game request to close modals
