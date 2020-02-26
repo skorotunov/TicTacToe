@@ -11,6 +11,9 @@ using TicTacToe.Domain.Entities;
 
 namespace TicTacToe.Application.Games.Queries.GetGameTiles
 {
+    /// <summary>
+    /// Handler of the query. Gets incoming data and outputs desired view model.
+    /// </summary>
     public class GetGameTilesQueryHandler : IRequestHandler<GetGameTilesQuery, GameTilesVM>
     {
         private readonly ITicTacToeDbContext context;

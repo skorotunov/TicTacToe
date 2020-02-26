@@ -8,6 +8,11 @@ using ValidationException = TicTacToe.Application.Common.Exceptions.ValidationEx
 
 namespace TicTacToe.Application.Common.Behaviours
 {
+    /// <summary>
+    /// Behaviour which provides validation checks on each request.
+    /// </summary>
+    /// <typeparam name="TRequest">Type of the MediatR request.</typeparam>
+    /// <typeparam name="TResponse">Type of the MediatR response.</typeparam>
     public class RequestValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {

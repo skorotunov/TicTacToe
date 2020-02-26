@@ -350,7 +350,15 @@ $(document).on("click", ".player-declineGame-btn", function () {
 // event handler on game accepted button
 $(document).on("click", ".player-acceptGame-btn", function () {
     var playerId = $(this).closest("div").attr("player-id");
-    var gameId = parseInt($(this).closest("div").attr("game-id"), 10);
+    var gameIdString = $(this).closest("div").attr("game-id");
+    var gameId;
+    if (gameIdString) {
+        gameId = parseInt(gameIdString, 10);
+    }
+    else {
+        gameId = 0;
+    }
+    
     connection.invoke("OnNewGameAccept", playerId, gameId).catch(err => {
         alert("Your request has failed. Please contact support.");
     });

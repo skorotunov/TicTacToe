@@ -8,6 +8,7 @@ namespace TicTacToe.WebUI.Services
     {
         public CurrentUserService(IHttpContextAccessor httpContextAccessor)
         {
+            // get userId/name using HttpContext
             UserId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
             UserName = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name);
         }

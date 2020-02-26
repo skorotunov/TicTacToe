@@ -6,6 +6,9 @@ using TicTacToe.Domain.Entities;
 
 namespace TicTacToe.Application.Games.Commands.CreateGame
 {
+    /// <summary>
+    /// Handler which inserts game to the database.
+    /// </summary>
     public class CreateGameCommandHandler : IRequestHandler<CreateGameCommand, int>
     {
         private readonly ITicTacToeDbContext context;

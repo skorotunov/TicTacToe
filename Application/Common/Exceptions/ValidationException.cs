@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace TicTacToe.Application.Common.Exceptions
 {
+    /// <summary>
+    /// Custom exception aimed to represnt incorrect inpu data for the request.
+    /// </summary>
     public class ValidationException : Exception
     {
         public ValidationException()

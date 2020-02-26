@@ -2,6 +2,9 @@
 
 namespace TicTacToe.Application.Games.Commands.CreateGame
 {
+    /// <summary>
+    /// Command validation rules.
+    /// </summary>
     public class CreateGameCommandValidator : AbstractValidator<CreateGameCommand>
     {
         public CreateGameCommandValidator()

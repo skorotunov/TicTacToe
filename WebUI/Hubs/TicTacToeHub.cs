@@ -192,58 +192,103 @@ namespace TicTacToe.WebUI.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
+        /// <summary>
+        /// Method that is raised when one player (caller) opens list of the games between him and another player for the first time.
+        /// </summary>
+        /// <param name="playerId">ID of the player to show games list.</param>
+        /// <returns></returns>
         public async Task OnPlayerGamesFirstTimeOpen(string playerId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
+                // lock on any manipulations with the state of the player collections
                 lock (LockObject)
                 {
+                    // adding action that represents openning of the player games for the first time (this is required for correct work of multiple UI sessions.
+                    // e.g. - user sent game request to another player. Then he opens new browser tab. UI should display correct state - waiting for another player to respond).
                     caller.Actions.Add(new SynchronizationAction("PlayerGamesFirstTimeOpenHandle", new string[] { playerId }));
                 }
 
-                await Clients.User(currentUserService.UserId).SendAsync("PlayerGamesFirstTimeOpenHandle", playerId);
+                // Send handler to all connections of the caller
+                await Clients.User(caller.Id).SendAsync("PlayerGamesFirstTimeOpenHandle", playerId);
             }
         }
 
+        /// <summary>
+        /// Method that is raised when one player (caller) opens list of the games between him and another player which already been loaded to the UI.
+        /// </summary>
+        /// <param name="playerId">ID of the player to show games list.</param>
+        /// <returns></returns>
         public async Task OnPlayerGamesOpen(string playerId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
+                // lock on any manipulations with the state of the player collections
                 lock (LockObject)
                 {
+                    // adding action that represents openning of the player games for the first time (this is required for correct work of multiple UI sessions.
+                    // e.g. - user sent game request to another player. Then he opens new browser tab. UI should display correct state - waiting for another player to respond).
+                    // This method can be called only after player closed previously opened list which means that first action was removed from collection.
+                    // Therefore, we do not need to introduce another action name, we should still use PlayerGamesFirstTimeOpenHandle.
                     caller.Actions.Add(new SynchronizationAction("PlayerGamesFirstTimeOpenHandle", new string[] { playerId }));
                 }
 
-                await Clients.User(currentUserService.UserId).SendAsync("PlayerGamesOpenHandle", playerId);
+                // Send handler to all connections of the caller
+                await Clients.User(caller.Id).SendAsync("PlayerGamesOpenHandle", playerId);
             }
         }
 
+        /// <summary>
+        /// Method that is raised when one player (caller) closes list of the games between him and another player.
+        /// </summary>
+        /// <param name="playerId">ID of the player to hide games list.</param>
+        /// <returns></returns>
         public async Task OnPlayerGamesClose(string playerId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
+                // lock on any manipulations with the state of the player collections
                 lock (LockObject)
                 {
+                    // remove action that represents opening the player games list to prevent UI from unnecessary actions
                     caller.Actions.RemoveAll(x => x.Name == "PlayerGamesFirstTimeOpenHandle" && x.Parameters.First() == playerId);
                 }
 
-                await Clients.User(currentUserService.UserId).SendAsync("PlayerGamesCloseHandle", playerId);
+                // Send handler to all connections of the caller
+                await Clients.User(caller.Id).SendAsync("PlayerGamesCloseHandle", playerId);
             }
         }
 
+        /// <summary>
+        /// Method that is raised when one player asks another one to start the game (either new or continue) for the caller.
+        /// </summary>
+        /// <param name="playerId">ID of the player to start game with.</param>
+        /// <param name="gameId">ID of the game if player wants to continue existing one.</param>
+        /// <returns></returns>
         public async Task OnNewGameStartCaller(string playerId, string gameId)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller))
             {
+                // lock on any manipulations with the state of the player collections
                 lock (LockObject)
                 {
+                    // adding action that represents sending request to start a game (this is required for correct work of multiple UI sessions.
+                    // e.g. - user sent game request to another player. Then he opens new browser tab. UI should display correct state - waiting for another player to respond).
                     caller.Actions.Add(new SynchronizationAction("NewGameStartCallerHandle", new string[] { playerId, gameId }));
                 }
 
-                await Clients.User(currentUserService.UserId).SendAsync("NewGameStartCallerHandle", playerId, gameId);
+                // Send handler to all connections of the caller
+                await Clients.User(caller.Id).SendAsync("NewGameStartCallerHandle", playerId, gameId);
             }
         }
 
+        /// <summary>
+        /// Method that is raised when one player asks another one to start the game (either new or continue) for the receiver.
+        /// </summary>
+        /// <param name="playerId">ID of the player to start game with.</param>
+        /// <param name="gameId">ID of the game if player wants to continue existing one.</param>
+        /// <param name="gameDate">Fate of the game if player wants to continue existing one. It is used as a part of user's notification message.</param>
+        /// <returns></returns>
         public async Task OnNewGameStartReceiver(string playerId, string gameId, string gameDate)
         {
             if (PlayersCollection.AvailablePlayers.TryGetValue(currentUserService.UserId, out Player caller)
@@ -258,13 +303,21 @@ namespace TicTacToe.WebUI.Hubs
                         // check if target player is waiting for another game
                         if (receiver.Actions.LastOrDefault()?.Name == "NewGameStartCallerHandle")
                         {
+                            // inform caller that intendent player is busy
+                            // adding action that represents sending request to start a game (this is required for correct work of multiple UI sessions.
+                            // e.g. - user sent game request to another player. Then he opens new browser tab. UI should display correct state - waiting for another player to respond).
                             caller.Actions.RemoveAll(x => x.Name == "NewGameFailureHandle");
                             caller.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
+
+                            // Send handler to all connections of the caller
                             task = Clients.User(caller.Id).SendAsync("NewGameFailureHandle", receiver.Id, $"{receiver.Name} is busy at the moment. Please try later.");
                         }
                         else
                         {
+                            // receiver is not waiting, so he can be asked about the game
                             receiver.Actions.Add(new SynchronizationAction("NewGameStartReceiverHandle", new string[] { caller.Id, caller.Name, gameId, gameDate }));
+
+                            // Send handler to all connections of the caller
                             task = Clients.User(receiver.Id).SendAsync("NewGameStartReceiverHandle", caller.Id, caller.Name, gameId, gameDate);
                         }
                     }
@@ -273,6 +326,7 @@ namespace TicTacToe.WebUI.Hubs
                 }
                 catch
                 {
+                    // something went worng so we need to re-enable UI to prevent hanging
                     lock (LockObject)
                     {
                         caller.Actions.RemoveAll(x => x.Name == "NewGameStartCallerHandle" && x.Parameters.First() == receiver.Id);
@@ -280,6 +334,7 @@ namespace TicTacToe.WebUI.Hubs
                         caller.Actions.Add(new SynchronizationAction("NewGameFailureHandle"));
                     }
 
+                    // Send handler to all connections of the caller
                     await Clients.User(caller.Id).SendAsync("NewGameFailureHandle", receiver.Id, string.Empty);
                     throw;
                 }
@@ -372,6 +427,7 @@ namespace TicTacToe.WebUI.Hubs
                     caller.GroupName = guidString;
                     receiver.GroupName = guidString;
 
+                    // check if we need to open exisitng game or create new
                     if (gameId > 0)
                     {
                         caller.GameId = gameId;
@@ -394,6 +450,7 @@ namespace TicTacToe.WebUI.Hubs
                         }
                     }
 
+                    // add all connections of both players to the game group
                     foreach (string callerConnectionId in caller.ConnectionIds)
                     {
                         tasks.Add(Groups.AddToGroupAsync(callerConnectionId, guidString));
@@ -437,6 +494,7 @@ namespace TicTacToe.WebUI.Hubs
                     opponent.GameId = gameId;
                 }
 
+                // send to all group except current connection (one that actually has created the game)
                 await Clients.OthersInGroup(caller.GroupName).SendAsync("NewGameCreateHandle", gameId);
             }
         }

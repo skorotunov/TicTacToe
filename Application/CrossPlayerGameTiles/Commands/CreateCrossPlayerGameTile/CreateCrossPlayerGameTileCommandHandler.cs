@@ -8,6 +8,9 @@ using TicTacToe.Domain.Entities;
 
 namespace TicTacToe.Application.CrossPlayerGameTiles.Commands.CreateCrossPlayerGameTile
 {
+    /// <summary>
+    /// Handler which inserts data about the move to the database.
+    /// </summary>
     public class CreateCrossPlayerGameTileCommandHandler : IRequestHandler<CreateCrossPlayerGameTileCommand, int>
     {
         private readonly ITicTacToeDbContext context;

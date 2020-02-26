@@ -8,6 +8,9 @@ using TicTacToe.Domain.Entities;
 
 namespace TicTacToe.Application.NoughtPlayerGameTiles.Commands.CreateNoughtPlayerGameTile
 {
+    /// <summary>
+    /// Handler which inserts data about the move to the database.
+    /// </summary>
     public class CreateNoughtPlayerGameTileCommandHandler : IRequestHandler<CreateNoughtPlayerGameTileCommand, int>
     {
         private readonly ITicTacToeDbContext context;

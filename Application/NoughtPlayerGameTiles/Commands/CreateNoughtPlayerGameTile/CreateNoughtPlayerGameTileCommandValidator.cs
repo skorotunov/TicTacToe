@@ -4,6 +4,9 @@ namespace TicTacToe.Application.NoughtPlayerGameTiles.Commands.CreateNoughtPlaye
 {
     public class CreateNoughtPlayerGameTileCommandValidator : AbstractValidator<CreateNoughtPlayerGameTileCommand>
     {
+        /// <summary>
+        /// Validator of the command to insert O's move data.
+        /// </summary>
         public CreateNoughtPlayerGameTileCommandValidator()
         {
             RuleFor(x => x.GameId)

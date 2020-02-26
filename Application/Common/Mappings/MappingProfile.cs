@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace TicTacToe.Application.Common.Mappings
 {
+    /// <summary>
+    /// Register every mappings using reflection.
+    /// </summary>
     public class MappingProfile : Profile
     {
         public MappingProfile()
@@ -15,10 +18,8 @@ namespace TicTacToe.Application.Common.Mappings
         private void ApplyMappingsFromAssembly(Assembly assembly)
         {
             var types = assembly.GetExportedTypes()
-                .Where(t => t.GetInterfaces().Any(i =>
-                    i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMapFrom<>)))
+                .Where(x => x.GetInterfaces().Any(y => y.IsGenericType && y.GetGenericTypeDefinition() == typeof(IMapFrom<>)))
                 .ToList();
-
             foreach (Type type in types)
             {
                 object instance = Activator.CreateInstance(type);

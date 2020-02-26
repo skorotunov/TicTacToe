@@ -8,6 +8,9 @@ using TicTacToe.Application.Common.Exceptions;
 
 namespace TicTacToe.WebUI.Common
 {
+    /// <summary>
+    /// Middleware to hanlde cutom errors.
+    /// </summary>
     public class CustomExceptionHandlerMiddleware
     {
         private readonly RequestDelegate next;
@@ -35,13 +38,13 @@ namespace TicTacToe.WebUI.Common
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             HttpStatusCode code = HttpStatusCode.InternalServerError;
-
             string result = string.Empty;
-
             switch (exception)
             {
                 case ValidationException validationException:
                     code = HttpStatusCode.BadRequest;
+                    
+                    // serialize object for API result
                     result = JsonConvert.SerializeObject(validationException.Failures);
                     break;
                 case NotFoundException _:
@@ -51,7 +54,6 @@ namespace TicTacToe.WebUI.Common
 
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
-
             if (string.IsNullOrEmpty(result))
             {
                 result = JsonConvert.SerializeObject(new { error = exception.Message });

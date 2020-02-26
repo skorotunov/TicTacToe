@@ -2,6 +2,9 @@
 
 namespace TicTacToe.Application.Games.Commands.CheckAndUpdateGameWinConditions
 {
+    /// <summary>
+    /// Command validation rules.
+    /// </summary>
     public class CheckAndUpdateGameWinConditionsCommandValidator : AbstractValidator<CheckAndUpdateGameWinConditionsCommand>
     {
         public CheckAndUpdateGameWinConditionsCommandValidator()

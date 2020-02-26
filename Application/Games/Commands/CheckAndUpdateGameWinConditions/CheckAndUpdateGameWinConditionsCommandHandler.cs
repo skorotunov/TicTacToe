@@ -11,6 +11,9 @@ using TicTacToe.Domain.Enums;
 
 namespace TicTacToe.Application.Games.Commands.CheckAndUpdateGameWinConditions
 {
+    /// <summary>
+    /// Command which checks win condition and increments turn number.
+    /// </summary>
     public class CheckAndUpdateGameWinConditionsCommandHandler : IRequestHandler<CheckAndUpdateGameWinConditionsCommand, GameResult>
     {
         // minimum total turns in the game required for possible win
@@ -40,11 +43,14 @@ namespace TicTacToe.Application.Games.Commands.CheckAndUpdateGameWinConditions
             // check win conditions of the players only when win is possible. Increment turn number property
             if (++game.TurnNumber >= MinimumNumerOfTurnsToWin)
             {
+                // get list of all posible win condition tile combinations
                 List<WinCondition> winConditions = await context.WinConditions
                     .Include(x => x.WinConditionTiles)
                     .AsNoTracking()
                     .ToListAsync();
                 int notReachableWinConditionsCount = 0;
+
+                // iterate on win conditions to check each one
                 foreach (WinCondition winCondition in winConditions)
                 {
                     int crossPlayerWinConditionTilesCount = 0, noughtPlayerWinConditionTilesCount = 0;

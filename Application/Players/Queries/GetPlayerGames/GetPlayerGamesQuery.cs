@@ -2,6 +2,9 @@
 
 namespace TicTacToe.Application.Players.Queries.GetPlayerGames
 {
+    /// <summary>
+    /// Data which contains in the query parameters.
+    /// </summary>
     public class GetPlayerGamesQuery : IRequest<PlayerGamesVM>
     {
         public GetPlayerGamesQuery(string playerId, string currentPlayerId)

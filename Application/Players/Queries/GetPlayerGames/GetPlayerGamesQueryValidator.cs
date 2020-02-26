@@ -2,6 +2,9 @@
 
 namespace TicTacToe.Application.Players.Queries.GetPlayerGames
 {
+    /// <summary>
+    /// Validator for the get player games query parameters.
+    /// </summary>
     public class GetPlayerGamesQueryValidator : AbstractValidator<GetPlayerGamesQuery>
     {
         public GetPlayerGamesQueryValidator()

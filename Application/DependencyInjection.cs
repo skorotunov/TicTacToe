@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediatR;
+using MediatR.Pipeline;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using TicTacToe.Application.Common.Behaviours;
@@ -15,6 +16,8 @@ namespace TicTacToe.Application
             services.AddMediatR(Assembly.GetExecutingAssembly());
 
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestValidationBehavior<,>));
+
+            services.AddTransient(typeof(IRequestPreProcessor<>), typeof(RequestLogger<>));
 
             return services;
         }

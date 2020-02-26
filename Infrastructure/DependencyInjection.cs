@@ -15,15 +15,16 @@ namespace TicTacToe.Infrastructure
             services.AddDbContext<TicTacToeDbContext>(options =>
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
-                    b => b.MigrationsAssembly(typeof(TicTacToeDbContext).Assembly.FullName)));
+                    x => x.MigrationsAssembly(typeof(TicTacToeDbContext).Assembly.FullName)));
 
             services.AddScoped<ITicTacToeDbContext>(provider => provider.GetService<TicTacToeDbContext>());
 
-            services.AddDefaultIdentity<TicTacToeUser>()
-                .AddEntityFrameworkStores<TicTacToeDbContext>();
+            services.AddDefaultIdentity<TicTacToeUser>().AddEntityFrameworkStores<TicTacToeDbContext>();
 
             services.AddTransient<IDateTime, DateTimeService>();
+
             services.AddTransient<IGuid, GuidService>();
+
             services.AddTransient<IRandom, RandomService>();
 
             return services;
