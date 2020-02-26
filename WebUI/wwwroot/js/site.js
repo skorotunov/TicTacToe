@@ -28,7 +28,15 @@ connection.on("PlayerConnectHandle", function (players) {
 
 // method that is called on any new connection to connect to the game
 connection.on("PlayerInGameConnectHandle", function (opponent) {
-    connectToExistingGame(opponent);
+    // check if we want to continue existing game or create new
+    if (opponent.gameId) {
+        connectToExistingGame(opponent);
+    }
+    else {
+        processTurnInfo(opponent);
+    }
+
+    prepareGameElements(opponent);
 });
 
 // method that is called on the first player's connection being established to inform other players
@@ -574,16 +582,12 @@ function prepareGameElements(opponent) {
     $(".players-table").addClass("disabled");
 }
 
-// connect to existing game (for continue game and addinf new connection while others in the game)
+// connect to existing game (for continue game and when added new connection while others in the game)
 function connectToExistingGame(opponent) {
     // set necessary opponent data
     var boardElement = $(".boardContainer");
-    if (opponent.gameId !== 0) {
-        boardElement.attr("game-id", opponent.gameId);
-    }
-
     boardElement.attr("opponent-id", opponent.id);
-
+    boardElement.attr("game-id", opponent.gameId);
     // get game moves
     $.get("/api/games/" + opponent.gameId)
         .done(function (data) {

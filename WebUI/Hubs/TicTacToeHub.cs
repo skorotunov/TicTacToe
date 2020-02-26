@@ -131,7 +131,6 @@ namespace TicTacToe.WebUI.Hubs
                 lock (LockObject)
                 {
                     playerInTheGame.ConnectionIds.RemoveWhere(x => x.Equals(connectionId));
-                    tasks.Add(Groups.RemoveFromGroupAsync(connectionId, playerInTheGame.GroupName));
 
                     // check that last player connection was disconnected. In that case we need to inform opponent and all other players
                     if (!playerInTheGame.ConnectionIds.Any())
@@ -142,7 +141,12 @@ namespace TicTacToe.WebUI.Hubs
                         Player opponent = GetOpponent(playerInTheGame.Id, playerInTheGame.GroupName);
                         if (opponent != null)
                         {
-                            // informe other players that now opponent is available
+                            // clean-up game data
+                            opponent.GameId = 0;
+                            opponent.GroupName = null;
+                            opponent.IsCrossPlayer = false;
+
+                            // inform other players that now opponent is available
                             tasks.Add(Clients.AllExcept(opponent.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", opponent.Id, opponent.Name));
 
                             // move opponent to available players list
@@ -166,7 +170,8 @@ namespace TicTacToe.WebUI.Hubs
                         // process caller
                         // get all playerIds of the other players that are waiting for the response of the new game with caller.
                         // There should not be many players waiting for one specific player. Therefore, regular foreach should be more efficient than Parallel
-                        foreach (SynchronizationAction action in playerNotInTheGame.Actions.Where(x => x.Name == "NewGameStartReceiverHandle" && x.Parameters.First() != playerNotInTheGame.Id))
+                        foreach (SynchronizationAction action in playerNotInTheGame.Actions.Where(x => x.Name == "NewGameStartReceiverHandle"
+                                                                                                    && x.Parameters.First() != playerNotInTheGame.Id))
                         {
                             if (PlayersCollection.AvailablePlayers.TryGetValue(action.Parameters.First(), out Player waitingPlayer))
                             {
@@ -540,8 +545,10 @@ namespace TicTacToe.WebUI.Hubs
                         // cleanup game data
                         caller.GroupName = null;
                         caller.IsCrossPlayer = false;
+                        caller.GameId = 0;
                         opponent.GroupName = null;
                         opponent.IsCrossPlayer = false;
+                        opponent.GameId = 0;
 
                         // inform other players that game participants are now available for the game
                         tasks.Add(Clients.AllExcept(caller.ConnectionIds.ToList()).SendAsync("PlayerFirstTimeConnectHandle", caller.Id, caller.Name));
