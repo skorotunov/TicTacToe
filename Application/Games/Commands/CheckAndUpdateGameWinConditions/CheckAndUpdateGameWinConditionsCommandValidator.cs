@@ -10,7 +10,7 @@ namespace TicTacToe.Application.Games.Commands.CheckAndUpdateGameWinConditions
         public CheckAndUpdateGameWinConditionsCommandValidator()
         {
             RuleFor(x => x.GameId)
-                .GreaterThan(0).WithMessage("GmaeId must be possitive number");
+                .GreaterThan(0).WithMessage("GameId must be possitive number");
         }
     }
 }
